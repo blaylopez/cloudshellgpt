@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# AWS & Secrets
+.aws/
+*.pem
+*.key
+credentials
+.env*
+!.env.example
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# CDK
+cdk.out/
+*.js
+!infrastructure/cdk.json
+
+# Node (if CDK uses node)
+node_modules/
+
+# Local config (user-specific)
+~/.csgpt/
+
+# Logs
+*.log
+
+# Distribution
+*.tar.gz
+*.whl
