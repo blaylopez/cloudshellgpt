@@ -11,11 +11,13 @@ fileMatchPattern: "tests/**"
 tests/
 ├── unit/                    # Fast, no network, mocked AWS
 │   ├── test_intent.py       # IntentParser logic
+│   ├── test_bedrock.py      # BedrockTranslator (mocked boto3/Bedrock calls)
 │   ├── test_executor.py     # AWSExecutor (mocked subprocess)
 │   ├── test_safety.py       # SafetyLayer risk classification
 │   ├── test_formatter.py    # Output formatting
 │   ├── test_audit.py        # AuditLogger file operations
 │   ├── test_cost.py         # CostTracker
+│   ├── test_learning.py     # LearningMode tips and suggestions
 │   └── test_config.py       # ConfigManager
 ├── integration/             # Needs AWS (sandbox account)
 │   ├── test_bedrock.py      # Real Bedrock calls
@@ -71,16 +73,22 @@ def test_parse_spanish_s3_list():
 ### Testing SafetyLayer
 
 ```python
+from unittest.mock import patch, MagicMock
+
 def test_destructive_command_upgrades_risk():
     from cloudshellgpt.bedrock_translator import Translation
-    
+    from cloudshellgpt.safety import SafetyLayer
+
     translation = Translation(
         command="aws s3 rm s3://prod --recursive",
         explanation="Delete all",
         detailed_explanation="...",
         risk_level="medium",
     )
-    safety = SafetyLayer.__new__(SafetyLayer)  # Skip __init__ (no boto3)
+
+    with patch("boto3.client") as mock_boto:
+        safety = SafetyLayer()
+    
     assert safety._is_destructive(translation.command) is True
 ```
 
@@ -158,8 +166,11 @@ The eval set (`tests/eval/translation_eval.jsonl`) contains 100 test cases:
 Use it to measure translation accuracy:
 
 ```bash
+# Requires custom pytest plugin defined in tests/eval/conftest.py
 pytest tests/eval/ --eval-threshold=0.90
 ```
+
+> Si el plugin no está instalado, pytest mostrará: `error: unrecognized arguments: --eval-threshold=0.90`. En ese caso, asegúrate de que `tests/eval/conftest.py` define el flag con `pytest_addoption`.
 
 ## Coverage Targets
 

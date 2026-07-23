@@ -7,7 +7,7 @@ fileMatchPattern: "**/mcp_server.py"
 
 ## Overview
 
-CloudShellGPT exposes 4 tools via Model Context Protocol (MCP) for use in Kiro, Claude Desktop, and Cursor.
+CloudShellGPT exposes tools via Model Context Protocol (MCP) for use in Kiro, Claude Desktop, and Cursor.
 
 ## Transport
 

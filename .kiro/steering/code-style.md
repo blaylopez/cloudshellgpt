@@ -24,7 +24,8 @@ Every module follows this order:
 6. Constants
 7. Pydantic models
 8. Classes
-9. Helper functions (private, prefixed with `_`)
+9. Public functions (module-level API, e.g. `parse_intent`, `run_command`)
+10. Private helper functions (prefixed with `_`, e.g. `_detect_service`, `_build_prompt`)
 
 ## Naming Conventions
 
