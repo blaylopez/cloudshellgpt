@@ -29,8 +29,13 @@ BedrockTranslator (bedrock_translator.py)
 SafetyLayer (safety.py)
     → Evaluates risk level
     → Checks for destructive patterns
-    → Estimates cost
     → Returns SafetyCheck
+    │
+    ▼
+CostTracker (cost.py)
+    → Tracks and estimates cost of the command
+    → Adds warnings if exceeds threshold
+    → Returns CostEstimate
     │
     ▼
 AWSExecutor (executor.py)
@@ -45,6 +50,11 @@ Formatter (formatter.py)
     ▼
 AuditLogger (audit.py)
     → Logs everything to ~/.csgpt/audit.log
+
+LearningMode (learning.py) [optional, parallel]
+    → Provides educational tips after execution
+    → Suggests related commands
+    → Explains flags used in the translated command
 ```
 
 ## Key Data Models (contracts between modules)
@@ -59,7 +69,7 @@ These models are the API contracts. Changing their fields requires coordinating 
 
 ## MCP Server
 
-CloudShellGPT doubles as an MCP server with 4 tools:
+CloudShellGPT doubles as an MCP server with the following tools:
 - `aws_translate` — natural language → AWS CLI command
 - `aws_execute` — run a command with optional dry-run
 - `aws_cost_preview` — estimate cost before executing
@@ -77,7 +87,7 @@ User config at `~/.csgpt/config.yaml`:
 - `require_confirmation_for` (default: [high, critical])
 - `enable_cost_preview` (default: true)
 - `enable_learning_mode` (default: true)
-- `max_cost_alert` (default: $100)
+- `max_cost_alert` (default: 100, int — valor en USD sin símbolo)
 
 ## What's NOT implemented yet
 
