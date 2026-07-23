@@ -5,7 +5,12 @@
 - Model: `anthropic.claude-3-5-sonnet-20241022-v2:0`
 - API: Always use the Converse API (`client.converse()`), never the legacy `invoke_model`
 - Temperature: 0.2 for translation (precision), 0.3 for explanations (more creative)
-- Max tokens: 2048 for translations, 1024 for explanations
+- Max tokens por tipo de intención:
+  - translation (NL → AWS CLI): 2048
+  - explanation: 1024
+  - code_generation (Lambda, IaC): 4096
+  - architecture_review: 4096
+  - Default para intenciones nuevas: 4096
 - System prompts: defined as class constants, never hardcoded inline
 - Always handle `BedrockError` gracefully with user-facing message
 
@@ -47,7 +52,8 @@ client = boto3.client("bedrock-runtime")
 
 ## Safety Rules for Executor
 
-- ONLY execute commands that start with `aws` (validated in executor.py)
+- ONLY execute commands that start with `aws`, validated against the user's captured IAM role
+- Commands run under the user's assumed role — CloudShellGPT captures and validates the role before execution
 - Timeout: 30s default, configurable
 - Dry-run injection for destructive commands
 - Never execute commands with `|`, `&&`, `;`, backticks, or `$(...)` (shell injection prevention)
@@ -58,7 +64,7 @@ client = boto3.client("bedrock-runtime")
 - Bedrock Claude 3.5 Sonnet: ~$0.003/1K input tokens, ~$0.015/1K output tokens
 - Average request cost: ~$0.01-0.02
 - Track costs in session via CostTracker
-- Warn user if estimated resource cost > $100/month
+- Warn user if estimated cost of the resource being created > $100/month
 
 ## Region Strategy
 

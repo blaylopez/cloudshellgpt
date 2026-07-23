@@ -13,10 +13,15 @@ CloudShellGPT must NEVER execute a destructive command without explicit user con
 
 | Level | Criteria | Action Required |
 |-------|----------|-----------------|
-| `low` | Read-only operations (list, describe, get) | Execute immediately |
-| `medium` | Create/update operations that are reversible | Show plan, then execute |
-| `high` | Delete/terminate operations | Require typed confirmation |
-| `critical` | Recursive delete, force operations, production-affecting | Require "yes-i-understand" + dry-run first |
+| `low` | Read-only operations (list, describe, get, head, wait) | Execute immediately |
+| `medium` | Create/update operations with easy rollback (e.g., create-bucket, tag-resource, put-metric-alarm, enable-*, create-snapshot) | Show plan, then execute |
+| `high` | Delete/terminate/revoke operations on single resources (e.g., delete-bucket, terminate-instances, revoke-security-group-ingress, detach-volume) | Require typed confirmation |
+| `critical` | Recursive/batch delete, force operations, skip-safety-net flags (e.g., `--skip-final-snapshot`, `--force-delete`, `--no-preserve-root`, empty-bucket, delete-stack with retain=none) | Require "yes-i-understand" + dry-run first |
+
+**Heurística para clasificar operaciones medium vs high:**
+- Si la operación tiene un inverso directo y no destruye datos (create → delete, attach → detach), es `medium`
+- Si la operación elimina datos o acceso y requiere recreación manual, es `high`
+- Si hay duda, clasificar hacia arriba (prefer false positive over false negative)
 
 ## Destructive Patterns to Detect
 
@@ -24,11 +29,20 @@ These patterns in a command MUST trigger risk upgrade:
 
 ```python
 DESTRUCTIVE_PATTERNS = [
+    # Generic destructive verbs
     "delete", "terminate", "rm", "remove", "drop", "destroy", "force",
-    "--recursive", "--force", "-f", "--no-preserve",
     "purge", "wipe", "nuke",
+    # AWS-specific destructive actions
+    "deregister", "revoke", "detach", "disable", "release", "empty",
+    # Dangerous flags
+    "--recursive", "--force", "-f", "--no-preserve",
+    "--skip-final-snapshot", "--force-delete", "--permanently-delete",
+    "--no-undo", "--force-destroy", "--delete-all-versions",
+    "--bypass-governance-retention", "--no-preserve-root",
 ]
 ```
+
+> **Nota:** Esta lista es la base mínima. El safety layer también debe detectar combinaciones peligrosas en contexto (ej: `update-stack` + `--use-previous-template` sin changeset previo).
 
 ## Confirmation Flow
 
@@ -43,10 +57,16 @@ critical → show command + warning banner + affected resources + cost estimate
 
 ## Cost Estimation Rules
 
-- If a command creates resources, estimate monthly cost BEFORE executing
-- If estimated cost > `max_cost_alert` ($100 default), show explicit warning
-- Cost breakdown should list each component separately
-- If Cost Explorer API fails, show "cost unknown — proceed with caution"
+La estimación de costos es responsabilidad compartida entre `safety.py` y `cost.py`:
+
+- **`cost.py`** — implementa la lógica de cálculo: consulta Cost Explorer, estima costos por servicio, genera el breakdown por componente
+- **`safety.py`** — consume el resultado de `cost.py` para decidir si alertar al usuario o bloquear la ejecución según el umbral configurado
+
+Reglas:
+- Si un comando crea recursos, `cost.py` debe estimar el costo mensual ANTES de ejecutar
+- `safety.py` compara el resultado contra `max_cost_alert` (config). Si lo excede, muestra warning explícito
+- El cost breakdown (de `cost.py`) debe listar cada componente por separado
+- Si Cost Explorer API falla, `cost.py` retorna estado "unknown" y `safety.py` muestra "costo desconocido — proceder con precaución"
 
 ## Dry-Run Injection
 
@@ -54,21 +74,38 @@ Services that support `--dry-run`:
 - `ec2 run-instances`
 - `ec2 terminate-instances`
 - `ec2 delete-volume`
+- `ec2 create-vpc`
+- `ec2 authorize-security-group-ingress`
+- `ec2 revoke-security-group-ingress`
 - `rds delete-db-instance`
+- `rds create-db-instance`
 - `s3api delete-bucket`
 - `iam delete-user`
+- `cloudformation create-stack` (via change sets)
+- `cloudformation update-stack` (via change sets)
+- `lambda invoke` (with `--qualifier` for alias testing)
+
+> **Nota:** Esta lista no es exhaustiva. Si un comando no está aquí, no inyectar `--dry-run` — en su lugar, mostrar el comando sin ejecutar y pedir confirmación explícita.
 
 For services without native dry-run support, prepend a comment marker and show the command WITHOUT executing.
 
 ## Shell Injection Prevention
 
-The executor MUST reject commands containing:
+The executor MUST reject commands containing shell metacharacters:
 - Pipe (`|`)
 - Command chaining (`&&`, `||`, `;`)
 - Subshell execution (`` ` ` ``, `$(...)`)
-- Redirects (`>`, `>>`, `<`)
+- Redirects (`>`, `>>`, `<`, `2>`)
+- Background execution (`&` at end of command)
+- Glob expansion in dangerous context (`*` outside of quoted arguments)
+- Newlines or null bytes (`\n`, `\0`)
+- Environment variable injection (`$VAR`, `${VAR}`)
+- Here-doc/here-string (`<<`, `<<<`)
+- Process substitution (`<(...)`, `>(...)`)
 
 Only pure `aws ...` commands are allowed.
+
+> **Excepción:** El argumento literal `-` (stdin/stdout) es válido en algunos comandos AWS (ej: `aws s3 cp - s3://bucket/file`). No rechazar `-` como carácter aislado en posición de argumento, solo rechazar los operadores shell `<` y `>` como sintaxis de redirección.
 
 ## Audit Before Execute
 

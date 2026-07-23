@@ -56,17 +56,24 @@ ci: add ruff + mypy check to GitHub Actions workflow
 
 ## Branch Strategy
 
-- `main` — protected, always deployable
-- `feature/<short-description>` — new features
-- `fix/<short-description>` — bug fixes
-- `infra/<short-description>` — infrastructure changes
-- `docs/<short-description>` — documentation
+- `main` — protected, always deployable (producción)
+- `dev` — protected, rama de integración (QA/staging antes de main)
+- `feature/<short-description>` — new features (se crean desde `dev`)
+- `fix/<short-description>` — bug fixes (se crean desde `dev`)
+- `infra/<short-description>` — infrastructure changes (se crean desde `dev`)
+- `docs/<short-description>` — documentation (se crean desde `dev`)
+
+### Flujo de merge
+
+1. Las ramas de trabajo (`feature/*`, `fix/*`, `infra/*`, `docs/*`) se mergean a `dev` vía PR
+2. Cuando `dev` está estable y pasa QA, se mergea a `main` vía PR
 
 ### Rules
 
-- Never push directly to `main`
+- Never push directly to `main` or `dev`
 - All changes via Pull Request with at least 1 review
-- PRs must pass CI (lint + tests) before merge
+- PRs a `dev` deben pasar CI (lint + tests) antes de merge
+- PRs a `main` requieren que `dev` esté verde en CI y aprobación del equipo
 - Squash merge preferred (clean history)
 - Delete branch after merge
 
