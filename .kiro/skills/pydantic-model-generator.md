@@ -31,9 +31,7 @@ class ModelName(BaseModel):
 
     # Campos requeridos primero
     required_field: str = Field(..., description="Qué representa este campo")
-    action: Literal["list", "create", "delete", "update"] = Field(
-        ..., description="Tipo de acción"
-    )
+    action: Literal["list", "create", "delete", "update"] = Field(..., description="Tipo de acción")
 
     # Campos con default después
     optional_field: str | None = Field(default=None, description="Campo opcional")
@@ -160,8 +158,10 @@ class CostEstimate(BaseModel):
 # MAL — dict suelto como contrato
 def translate(intent: dict) -> dict: ...
 
+
 # MAL — Optional de typing
 from typing import Optional, List
+
 field: Optional[str] = None
 items: List[str] = []
 

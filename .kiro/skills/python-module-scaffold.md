@@ -35,6 +35,7 @@ from cloudshellgpt.config import Config
 DEFAULT_TIMEOUT: int = 30
 MODULE_NAME: str = "module_name"
 
+
 # Pydantic models
 class MyModel(BaseModel):
     """Descripción del modelo.
@@ -45,6 +46,7 @@ class MyModel(BaseModel):
 
     field_name: str = Field(..., description="Descripción del campo")
     optional_field: str | None = Field(default=None, description="Campo opcional")
+
 
 # Classes (PascalCase)
 class MyClass:
@@ -76,6 +78,7 @@ class MyClass:
         """Helper privado."""
         return arg
 
+
 # Public functions (snake_case)
 def public_function(param: str) -> str:
     """Descripción de la función pública.
@@ -87,6 +90,7 @@ def public_function(param: str) -> str:
         Descripción del retorno.
     """
     return _private_helper(param)
+
 
 # Private helpers (_prefixed)
 def _private_helper(param: str) -> str:

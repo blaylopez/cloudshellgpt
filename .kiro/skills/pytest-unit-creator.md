@@ -69,6 +69,7 @@ def test_destructive_command_upgrades_risk_to_critical(): ...
 def test_executor_rejects_pipe_in_command(): ...
 def test_cost_explorer_failure_returns_unknown_status(): ...
 
+
 # Malos nombres:
 def test_1(): ...
 def test_intent(): ...
@@ -183,9 +184,7 @@ def test_translator_calls_converse_api() -> None:
         mock_boto.return_value = mock_client
         mock_client.converse.return_value = {
             "output": {
-                "message": {
-                    "content": [{"text": '{"command": "aws s3 ls", "explanation": "..."}'}]
-                }
+                "message": {"content": [{"text": '{"command": "aws s3 ls", "explanation": "..."}'}]}
             },
             "usage": {"inputTokens": 100, "outputTokens": 50},
         }

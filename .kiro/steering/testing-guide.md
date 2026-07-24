@@ -35,6 +35,7 @@ tests/
 import pytest
 from moto import mock_aws
 
+
 @mock_aws
 def test_cost_explorer_returns_estimate():
     # moto automatically mocks boto3 calls
@@ -45,6 +46,7 @@ def test_cost_explorer_returns_estimate():
 
 ```python
 from unittest.mock import patch, MagicMock
+
 
 def test_executor_runs_aws_command():
     with patch("subprocess.run") as mock_run:
@@ -75,6 +77,7 @@ def test_parse_spanish_s3_list():
 ```python
 from unittest.mock import patch, MagicMock
 
+
 def test_destructive_command_upgrades_risk():
     from cloudshellgpt.bedrock_translator import Translation
     from cloudshellgpt.safety import SafetyLayer
@@ -88,7 +91,7 @@ def test_destructive_command_upgrades_risk():
 
     with patch("boto3.client") as mock_boto:
         safety = SafetyLayer()
-    
+
     assert safety._is_destructive(translation.command) is True
 ```
 
@@ -102,15 +105,18 @@ import pytest
 from pathlib import Path
 from cloudshellgpt.config import ConfigManager
 
+
 @pytest.fixture
 def tmp_config(tmp_path):
     """Provides a temporary config file."""
     return ConfigManager(config_path=tmp_path / "config.yaml")
 
+
 @pytest.fixture
 def sample_intent():
     """Provides a sample Intent for testing."""
     from cloudshellgpt.intent import Intent
+
     return Intent(
         action="list",
         service="s3",
@@ -145,6 +151,7 @@ Integration tests are marked and can be skipped in CI if no AWS credentials:
 
 ```python
 import pytest
+
 
 @pytest.mark.integration
 def test_bedrock_translates_simple_intent():

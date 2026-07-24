@@ -199,6 +199,7 @@
 # tests/conftest.py
 import pytest
 
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "unit: unit tests (fast, no AWS)")
     config.addinivalue_line("markers", "integration: integration tests (sandbox AWS)")

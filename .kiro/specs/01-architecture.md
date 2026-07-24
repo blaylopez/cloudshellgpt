@@ -266,7 +266,7 @@ Log a `~/.csgpt/audit.log`.
 ```python
 # Orden correcto:
 audit.log(intent, command, risk)  # 1. Log first
-result = executor.run(command)     # 2. Execute second
+result = executor.run(command)  # 2. Execute second
 ```
 
 ### 9. Learning Mode (`src/cloudshellgpt/learning.py`)
