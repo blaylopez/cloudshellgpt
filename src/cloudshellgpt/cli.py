@@ -2,10 +2,11 @@
 
 Entry point for the CLI. Built with Typer for clean command structure.
 """
+
 from __future__ import annotations
 
 import sys
-from typing import Optional
+from typing import cast
 
 import typer
 from rich.console import Console
@@ -13,17 +14,10 @@ from rich.panel import Panel
 from rich.text import Text
 
 from cloudshellgpt import __version__
-from cloudshellgpt.intent import IntentParser
-from cloudshellgpt.bedrock_translator import BedrockTranslator
-from cloudshellgpt.safety import SafetyLayer
-from cloudshellgpt.executor import AWSExecutor
-from cloudshellgpt.formatter import Formatter
-from cloudshellgpt.audit import AuditLogger
-from cloudshellgpt.mcp_server import serve_mcp
 
 app = typer.Typer(
     name="csgpt",
-    help="AWS CLI that speaks your language. Natural language → AWS operations via Amazon Bedrock.",
+    help="AWS CLI that speaks your language. Natural language to AWS operations via Amazon Bedrock.",
     add_completion=True,
     no_args_is_help=True,
     rich_markup_mode="rich",
@@ -47,10 +41,16 @@ def ask(
     intent: str = typer.Argument(..., help="Your request in natural language (any language)"),
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Preview without executing"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation for safe commands"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table|json|yaml|csv"),
-    region: Optional[str] = typer.Option(None, "--region", "-r", help="AWS region override"),
-    explain: bool = typer.Option(False, "--explain", "-e", help="Show what the command does after execution"),
-    cost_only: bool = typer.Option(False, "--cost-only", help="Show cost preview without executing"),
+    output: str = typer.Option(
+        "table", "--output", "-o", help="Output format: table|json|yaml|csv"
+    ),
+    region: str | None = typer.Option(None, "--region", "-r", help="AWS region override"),
+    explain: bool = typer.Option(
+        False, "--explain", "-e", help="Show what the command does after execution"
+    ),
+    cost_only: bool = typer.Option(
+        False, "--cost-only", help="Show cost preview without executing"
+    ),
 ) -> None:
     """Execute AWS operations using natural language.
 
@@ -62,6 +62,14 @@ def ask(
     _show_banner()
 
     with console.status("[bold green]Thinking...[/bold green]"):
+        # Lazy imports for command execution
+        from cloudshellgpt.audit import AuditLogger
+        from cloudshellgpt.bedrock_translator import BedrockTranslator
+        from cloudshellgpt.executor import AWSExecutor
+        from cloudshellgpt.formatter import Formatter, FormatType
+        from cloudshellgpt.intent import IntentParser
+        from cloudshellgpt.safety import SafetyLayer
+
         # 1. Parse intent
         parser = IntentParser()
         parsed = parser.parse(intent, region=region)
@@ -80,7 +88,12 @@ def ask(
         check = safety.assess(translation)
 
         if cost_only:
-            console.print(Panel(check.cost_summary(), title="[bold]Cost Preview[/bold]"))
+            console.print(
+                Panel(
+                    f"Estimated cost: {check.estimated_cost}",
+                    title="[bold]Cost Preview[/bold]",
+                )
+            )
             return
 
         # 4. Show what we're about to do
@@ -116,7 +129,11 @@ def ask(
         )
 
         # 8. Format output
-        formatter = Formatter(format_type=output)
+        format_type: FormatType = cast(
+            FormatType,
+            output if output in ("table", "json", "yaml", "csv", "raw") else "table",
+        )
+        formatter = Formatter(format_type=format_type)
         formatter.render(result)
 
         if explain:
@@ -131,21 +148,25 @@ def ask(
 
 @app.command()
 def learn(
-    topic: str = typer.Argument(..., help="AWS service to learn: s3, ec2, lambda, dynamodb, iam, vpc"),
+    topic: str = typer.Argument(
+        ..., help="AWS service to learn: s3, ec2, lambda, dynamodb, iam, vpc"
+    ),
 ) -> None:
     """Interactive tutorial for an AWS service."""
     from cloudshellgpt.learning import TutorialRunner
+
     runner = TutorialRunner(topic)
     runner.run()
 
 
 @app.command()
 def explain(
-    command: Optional[str] = typer.Argument(None, help="AWS CLI command to explain"),
+    command: str | None = typer.Argument(None, help="AWS CLI command to explain"),
     last: bool = typer.Option(False, "--last", help="Explain the last executed command"),
 ) -> None:
     """Explain what an AWS CLI command does in detail."""
     from cloudshellgpt.learning import Explainer
+
     explainer = Explainer()
     if last:
         explainer.explain_last()
@@ -160,6 +181,7 @@ def explain(
 def cost_summary() -> None:
     """Show the cumulative estimated cost of resources created in this session."""
     from cloudshellgpt.cost import CostTracker
+
     tracker = CostTracker()
     summary = tracker.session_summary()
     console.print(Panel(summary, title="[bold]Session Cost Summary[/bold]", border_style="yellow"))
@@ -172,6 +194,8 @@ def mcp(
     """Run CloudShellGPT as an MCP server (for Kiro, Claude, Cursor)."""
     if action == "serve":
         console.print("[dim]Starting MCP server on stdio...[/dim]")
+        from cloudshellgpt.mcp_server import serve_mcp
+
         serve_mcp()
     else:
         console.print(f"[red]Unknown MCP action:[/red] {action}")
@@ -181,11 +205,14 @@ def mcp(
 @app.command()
 def config(
     show: bool = typer.Option(False, "--show", help="Show current configuration"),
-    set_region: Optional[str] = typer.Option(None, "--set-region", help="Set default region"),
-    set_language: Optional[str] = typer.Option(None, "--set-language", help="Set default output language"),
+    set_region: str | None = typer.Option(None, "--set-region", help="Set default region"),
+    set_language: str | None = typer.Option(
+        None, "--set-language", help="Set default output language"
+    ),
 ) -> None:
     """Configure CloudShellGPT."""
     from cloudshellgpt.config import ConfigManager
+
     cfg = ConfigManager()
 
     if show:
@@ -200,14 +227,25 @@ def config(
         console.print(f"[green]Language set to {set_language}[/green]")
 
 
-@app.callback()
-def main(
-    version: bool = typer.Option(False, "--version", "-V", help="Show version and exit"),
-) -> None:
-    """CloudShellGPT — AWS CLI that speaks your language."""
-    if version:
+def _version_callback(value: bool) -> None:
+    """Print version and exit."""
+    if value:
         console.print(f"csgpt version {__version__}")
         raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-V",
+        help="Show version and exit",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """CloudShellGPT — AWS CLI that speaks your language."""
 
 
 def _risk_color(level: str) -> str:

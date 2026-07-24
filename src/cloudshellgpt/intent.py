@@ -1,16 +1,19 @@
 """Intent parser — converts natural language into structured Intent objects."""
+
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 import langdetect
 from pydantic import BaseModel, Field
+
+ActionType = Literal["list", "create", "delete", "update", "describe", "invoke", "unknown"]
 
 
 class Intent(BaseModel):
     """Structured representation of user's natural language request."""
 
-    action: Literal["list", "create", "delete", "update", "describe", "invoke", "unknown"]
+    action: ActionType
     service: str = Field(..., description="AWS service short name (s3, ec2, lambda, etc.)")
     resource_type: str | None = None
     filters: dict[str, Any] = Field(default_factory=dict)
@@ -31,7 +34,7 @@ class IntentParser:
     2. Fallback to Bedrock for ambiguous inputs
     """
 
-    SERVICE_KEYWORDS = {
+    SERVICE_KEYWORDS: dict[str, list[str]] = {
         "s3": ["s3", "bucket", "buckets", "objeto", "objetos", "almacenamiento"],
         "ec2": ["ec2", "instancia", "instances", "vm", "servidor", "server"],
         "lambda": ["lambda", "funcion", "function", "función"],
@@ -44,7 +47,7 @@ class IntentParser:
         "sqs": ["sqs", "queue", "cola"],
     }
 
-    ACTION_KEYWORDS = {
+    ACTION_KEYWORDS: dict[str, list[str]] = {
         "list": ["lista", "list", "muestra", "show", "muéstrame", "ver", "dame"],
         "create": ["crea", "create", "haz", "genera", "nuevo", "new", "provisiona"],
         "delete": ["borra", "delete", "elimina", "quita", "remove"],
@@ -67,7 +70,7 @@ class IntentParser:
 
         # Detect language
         try:
-            detected_lang = langdetect.detect(text)
+            detected_lang: str = langdetect.detect(text)
         except langdetect.lang_detect_exception.LangDetectException:
             detected_lang = "en"
 
@@ -106,16 +109,18 @@ class IntentParser:
                 return service
         return None
 
-    def _detect_action(self, text: str) -> str:
+    def _detect_action(self, text: str) -> ActionType:
         """Detect intended action from text via keyword matching."""
         for action, keywords in self.ACTION_KEYWORDS.items():
             if any(kw in text for kw in keywords):
-                return action
+                # Validate action is a valid ActionType
+                if action in get_args(ActionType):
+                    return action  # type: ignore[return-value]
         return "unknown"
 
     def _suggestion(self, text: str, service: str | None, action: str) -> str:
         """Generate a helpful suggestion when intent is unclear."""
         return (
-            f"Try being more specific. Example: 'list the S3 buckets' "
-            f"or 'create a new EC2 instance t3.micro'"
+            "Try being more specific. Example: 'list the S3 buckets' "
+            "or 'create a new EC2 instance t3.micro'"
         )

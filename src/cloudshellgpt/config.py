@@ -1,7 +1,9 @@
 """Configuration manager — handles user settings and defaults."""
+
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
@@ -31,17 +33,18 @@ class ConfigManager:
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         self._config = self._load()
 
-    def get(self, key: str, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         """Get a config value by key."""
         return getattr(self._config, key, default)
 
-    def set(self, key: str, value) -> None:
+    def set(self, key: str, value: Any) -> None:
         """Set a config value."""
         setattr(self._config, key, value)
 
     def to_yaml(self) -> str:
         """Return the config as YAML string."""
-        return yaml.dump(self._config.model_dump(), default_flow_style=False)
+        result: str = yaml.dump(self._config.model_dump(), default_flow_style=False)
+        return result
 
     def save(self) -> None:
         """Save the current config to disk."""

@@ -1,4 +1,5 @@
 """Learning mode — interactive tutorials and command explanations."""
+
 from __future__ import annotations
 
 import boto3
@@ -10,7 +11,7 @@ from rich.prompt import Prompt
 class TutorialRunner:
     """Runs interactive tutorials for AWS services."""
 
-    TUTORIALS = {
+    TUTORIALS: dict[str, list[dict[str, str]]] = {
         "s3": [
             {
                 "title": "S3 — Tu primer bucket",
@@ -111,14 +112,17 @@ Provide a clear, educational explanation. Use markdown."""
                 messages=[{"role": "user", "content": [{"text": prompt}]}],
                 inferenceConfig={"maxTokens": 1024, "temperature": 0.3},
             )
-            return response["output"]["message"]["content"][0]["text"]
+            result: str = response["output"]["message"]["content"][0]["text"]
+            return result
         except Exception as e:
             return f"Error explaining command: {e}"
 
     def explain(self, command: str) -> None:
         """Explain a command interactively."""
         explanation = self.explain_sync(command)
-        self.console.print(Panel(explanation, title="[bold]Explanation[/bold]", border_style="green"))
+        self.console.print(
+            Panel(explanation, title="[bold]Explanation[/bold]", border_style="green")
+        )
 
     def explain_last(self) -> None:
         """Explain the last command from audit log."""
@@ -130,4 +134,5 @@ Provide a clear, educational explanation. Use markdown."""
             self.console.print("[yellow]No previous commands found[/yellow]")
             return
 
-        self.explain(entries[-1]["command"])
+        last_command = entries[-1]["command"]
+        self.explain(str(last_command))

@@ -1,12 +1,13 @@
 """Cost tracker — tracks estimated costs of resources created during a session."""
+
 from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import yaml
 from rich.console import Console
-from rich.panel import Panel
 
 
 class CostTracker:
@@ -43,7 +44,7 @@ class CostTracker:
 
         return "\n".join(lines)
 
-    def _load(self) -> list[dict]:
+    def _load(self) -> list[dict[str, Any]]:
         """Load costs from disk."""
         if not self.session_path.exists():
             return []
@@ -51,7 +52,7 @@ class CostTracker:
             data = yaml.safe_load(f) or []
         return data
 
-    def _save(self, costs: list[dict]) -> None:
+    def _save(self, costs: list[dict[str, Any]]) -> None:
         """Save costs to disk."""
         with self.session_path.open("w") as f:
             yaml.safe_dump(costs, f, default_flow_style=False)

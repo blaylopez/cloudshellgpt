@@ -55,6 +55,13 @@ node_modules/
 # Logs
 *.log
 
+# Ruff cache
+.ruff_cache/
+
+# Temporary output files
+output.txt
+uv_output2.txt
+
 # Distribution
 *.tar.gz
 *.whl

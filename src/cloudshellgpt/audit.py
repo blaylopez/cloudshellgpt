@@ -1,4 +1,5 @@
 """Audit logger — records all executed commands for compliance and debugging."""
+
 from __future__ import annotations
 
 import json
@@ -59,12 +60,12 @@ class AuditLogger:
             # Never fail the user-facing operation due to logging issues
             pass
 
-    def tail(self, n: int = 10) -> list[dict]:
+    def tail(self, n: int = 10) -> list[dict[str, object]]:
         """Return the last N entries from the log."""
         if not self.log_path.exists():
             return []
 
-        entries = []
+        entries: list[dict[str, object]] = []
         with self.log_path.open("r", encoding="utf-8") as f:
             for line in f:
                 try:
