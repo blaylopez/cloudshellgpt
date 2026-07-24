@@ -59,9 +59,7 @@ class TestACMultiLanguageSupport:
             ("zeige alle S3 Buckets in meinem AWS Konto an", "de"),
         ],
     )
-    def test_language_detection(
-        self, parser: IntentParser, text: str, expected_lang: str
-    ) -> None:
+    def test_language_detection(self, parser: IntentParser, text: str, expected_lang: str) -> None:
         """Verifies langdetect correctly identifies each language."""
         result = parser.parse(text)
         assert result.detected_language == expected_lang
