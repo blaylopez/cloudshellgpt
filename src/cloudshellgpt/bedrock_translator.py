@@ -1,4 +1,5 @@
 """Bedrock translator — converts Intent objects into AWS CLI commands via Claude 3.5 Sonnet."""
+
 from __future__ import annotations
 
 import json
@@ -169,7 +170,7 @@ Output: {
 Language detected: {intent.detected_language}
 Service detected: {intent.service}
 Action detected: {intent.action}
-Region: {intent.region or 'default (us-east-1)'}
+Region: {intent.region or "default (us-east-1)"}
 
 Translate this to an AWS CLI command. Return ONLY the JSON object."""
 
@@ -182,9 +183,11 @@ Translate this to an AWS CLI command. Return ONLY the JSON object."""
             lines = text.split("\n")
             text = "\n".join(lines[1:-1]) if lines[-1].startswith("```") else "\n".join(lines[1:])
 
-        return json.loads(text)
+        result: dict[str, Any] = json.loads(text)
+        return result
 
 
 class BedrockError(Exception):
     """Raised when Bedrock translation fails."""
+
     pass

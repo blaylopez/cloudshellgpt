@@ -6,20 +6,34 @@ This stack creates the serverless backend for CloudShellGPT's cloud features:
 - Observability (CloudWatch + X-Ray)
 - Optional API Gateway for hosted mode
 """
+
 from __future__ import annotations
 
 from aws_cdk import (
-    App,
-    Stack,
-    Duration,
     CfnOutput,
+    Duration,
     RemovalPolicy,
-    aws_dynamodb as dynamodb,
-    aws_lambda as lambda_,
+    Stack,
+)
+from aws_cdk import (
     aws_apigatewayv2 as apigw,
-    aws_iam as iam,
-    aws_logs as logs,
+)
+from aws_cdk import (
     aws_cloudwatch as cloudwatch,
+)
+from aws_cdk import (
+    aws_dynamodb as dynamodb,
+)
+from aws_cdk import (
+    aws_iam as iam,
+)
+from aws_cdk import (
+    aws_lambda as lambda_,
+)
+from aws_cdk import (
+    aws_logs as logs,
+)
+from aws_cdk import (
     aws_s3 as s3,
 )
 from constructs import Construct
@@ -47,12 +61,8 @@ class CloudShellGPTStack(Stack):
             self,
             "AuditLogTable",
             table_name=f"csgpt-audit-{environment}",
-            partition_key=dynamodb.Attribute(
-                name="pk", type=dynamodb.AttributeType.STRING
-            ),
-            sort_key=dynamodb.Attribute(
-                name="sk", type=dynamodb.AttributeType.STRING
-            ),
+            partition_key=dynamodb.Attribute(name="pk", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="sk", type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.AWS_MANAGED,
             point_in_time_recovery=True,
@@ -116,9 +126,7 @@ class CloudShellGPTStack(Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AWSLambdaBasicExecutionRole"
                 ),
-                iam.ManagedPolicy.from_aws_managed_policy_name(
-                    "AWSXRayDaemonWriteAccess"
-                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name("AWSXRayDaemonWriteAccess"),
             ],
         )
 
@@ -182,7 +190,9 @@ class CloudShellGPTStack(Stack):
                 "ENVIRONMENT": environment,
             },
             tracing=lambda_.Tracing.ACTIVE,
-            log_retention=logs.RetentionDays.ONE_MONTH if environment == "prod" else logs.RetentionDays.ONE_WEEK,
+            log_retention=logs.RetentionDays.ONE_MONTH
+            if environment == "prod"
+            else logs.RetentionDays.ONE_WEEK,
             reserved_concurrent_executions=100 if environment == "prod" else 10,
         )
 
@@ -234,15 +244,9 @@ class CloudShellGPTStack(Stack):
             cloudwatch.GraphWidget(
                 title="API Latency (ms)",
                 left=[
-                    self.translator_fn.metric_duration(
-                        statistic="p50", label="P50"
-                    ),
-                    self.translator_fn.metric_duration(
-                        statistic="p95", label="P95"
-                    ),
-                    self.translator_fn.metric_duration(
-                        statistic="p99", label="P99"
-                    ),
+                    self.translator_fn.metric_duration(statistic="p50", label="P50"),
+                    self.translator_fn.metric_duration(statistic="p95", label="P95"),
+                    self.translator_fn.metric_duration(statistic="p99", label="P99"),
                 ],
                 width=12,
             ),

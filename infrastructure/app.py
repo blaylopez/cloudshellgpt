@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """CDK app entry point for CloudShellGPT infrastructure."""
+
 import os
 
 import aws_cdk as cdk
-
-from cloudshellgpt_stack import CloudShellGPTStack, CloudShellGPTDevStack
-
+from cloudshellgpt_stack import CloudShellGPTDevStack, CloudShellGPTStack
 
 app = cdk.App()
 
