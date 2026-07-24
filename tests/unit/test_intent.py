@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cloudshellgpt.intent import Intent, IntentParser
+from cloudshellgpt.intent import IntentParser
 
 
 @pytest.fixture
