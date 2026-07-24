@@ -30,36 +30,15 @@ These patterns in a command MUST trigger risk upgrade:
 ```python
 DESTRUCTIVE_PATTERNS = [
     # Generic destructive verbs
-    "delete",
-    "terminate",
-    "rm",
-    "remove",
-    "drop",
-    "destroy",
-    "force",
-    "purge",
-    "wipe",
-    "nuke",
+    "delete", "terminate", "rm", "remove", "drop", "destroy", "force",
+    "purge", "wipe", "nuke",
     # AWS-specific destructive actions
-    "deregister",
-    "revoke",
-    "detach",
-    "disable",
-    "release",
-    "empty",
+    "deregister", "revoke", "detach", "disable", "release", "empty",
     # Dangerous flags
-    "--recursive",
-    "--force",
-    "-f",
-    "--no-preserve",
-    "--skip-final-snapshot",
-    "--force-delete",
-    "--permanently-delete",
-    "--no-undo",
-    "--force-destroy",
-    "--delete-all-versions",
-    "--bypass-governance-retention",
-    "--no-preserve-root",
+    "--recursive", "--force", "-f", "--no-preserve",
+    "--skip-final-snapshot", "--force-delete", "--permanently-delete",
+    "--no-undo", "--force-destroy", "--delete-all-versions",
+    "--bypass-governance-retention", "--no-preserve-root",
 ]
 ```
 
@@ -135,7 +114,7 @@ The audit logger MUST write the entry BEFORE the command executes. This ensures 
 ```python
 # Correct order:
 audit.log(intent, command, risk)  # 1. Log first
-result = executor.run(command)  # 2. Execute second
+result = executor.run(command)     # 2. Execute second
 ```
 
 ## PII Detection (opt-in)
