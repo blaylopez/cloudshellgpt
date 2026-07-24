@@ -26,8 +26,8 @@
 **Goal:** Traducción natural language → AWS CLI funcionando end-to-end
 
 #### Tareas
-- [ ] Implementar `Intent` model (Pydantic BaseModel) en `src/cloudshellgpt/intent.py`
-- [ ] Implementar IntentParser con langdetect para detección de idioma
+- [x] Implementar `Intent` model (Pydantic BaseModel) en `src/cloudshellgpt/intent.py`
+- [x] Implementar IntentParser con langdetect para detección de idioma
 - [ ] Implementar `Translation` model en `src/cloudshellgpt/bedrock_translator.py`
 - [ ] Cliente Bedrock con Converse API (`client.converse()`, nunca `invoke_model`)
 - [ ] System prompts como constantes de clase (nunca inline)
