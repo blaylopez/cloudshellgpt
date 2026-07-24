@@ -1,9 +1,9 @@
 """Output formatter — renders results in multiple formats (table, json, yaml, csv)."""
+
 from __future__ import annotations
 
 import json
-import sys
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from rich.console import Console
@@ -108,7 +108,7 @@ class Formatter:
         if result.stderr:
             self.console.print(f"[yellow]{result.stderr}[/yellow]")
 
-    def _try_parse_json(self, text: str) -> object | None:
+    def _try_parse_json(self, text: str) -> Any:
         """Try to parse text as JSON, return None if not valid."""
         try:
             return json.loads(text)

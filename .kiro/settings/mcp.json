@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "aws-docs": {
+      "command": "uvx",
+      "args": [
+        "--system-certs",
+        "--python-preference",
+        "system",
+        "--with",
+        "pip-system-certs",
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "UV_SYSTEM_PYTHON": "1"
+      },
+      "disabled": true
+    }
+  }
+}

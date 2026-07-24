@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Remind Test Mirror on Module Create",
+      "trigger": "PostFileCreate",
+      "description": "When a new Python module is created in src/cloudshellgpt/, reminds to create the corresponding test file in tests/unit/ following the testing-guide convention.",
+      "matcher": "src/cloudshellgpt/[^/]+\\.py$",
+      "action": {
+        "type": "agent",
+        "prompt": "A new Python module was just created in src/cloudshellgpt/. Per the testing-guide steering, every module must have a corresponding test file. Check if the matching test file exists at tests/unit/test_<module_name>.py. If it doesn't exist, create it with the basic test scaffold structure: docstring, from __future__ import annotations, imports, and a placeholder test class with a TODO comment. Follow the pytest-unit-creator skill conventions for naming and structure."
+      }
+    }
+  ]
+}

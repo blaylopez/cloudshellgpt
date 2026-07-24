@@ -1,4 +1,5 @@
 """Safety layer — risk assessment, cost preview, and dry-run support."""
+
 from __future__ import annotations
 
 from typing import Literal
@@ -7,7 +8,6 @@ import boto3
 from pydantic import BaseModel
 
 from cloudshellgpt.bedrock_translator import Translation
-
 
 RiskLevel = Literal["low", "medium", "high", "critical"]
 
@@ -58,8 +58,8 @@ class SafetyLayer:
         Returns:
             SafetyCheck with all risk/cost information
         """
-        # Start with the LLM-provided risk level
-        risk_level = translation.risk_level
+        # Start with the LLM-provided risk level, cast to RiskLevel
+        risk_level = self._validate_risk_level(translation.risk_level)
 
         # Upgrade risk if we see dangerous patterns
         if self._is_destructive(translation.command):
@@ -89,6 +89,12 @@ class SafetyLayer:
             cost_breakdown=cost_breakdown,
         )
 
+    def _validate_risk_level(self, level: str) -> RiskLevel:
+        """Validate and cast a string to RiskLevel."""
+        if level in ("low", "medium", "high", "critical"):
+            return level  # type: ignore[return-value]
+        return "low"
+
     def _is_destructive(self, command: str) -> bool:
         """Check if a command contains destructive patterns."""
         cmd_lower = command.lower()
@@ -108,8 +114,8 @@ class SafetyLayer:
         """Build a human-readable confirmation prompt."""
         if risk == "critical":
             return (
-                f"⚠️  CRITICAL OPERATION\n\n"
-                f"This action is IRREVERSIBLE and will affect:\n"
+                "⚠️  CRITICAL OPERATION\n\n"
+                "This action is IRREVERSIBLE and will affect:\n"
                 + "\n".join(f"  - {r}" for r in translation.affected_resources)
                 + f"\n\nEstimated cost: {translation.estimated_cost}\n"
                 f"\nType 'yes-i-understand' to proceed:"
@@ -133,7 +139,7 @@ class SafetyLayer:
             "s3 mb": "S3 storage cost",
         }
 
-        breakdown = {}
+        breakdown: dict[str, str] = {}
         for pattern, cost_type in cost_map.items():
             if pattern in translation.command:
                 breakdown[cost_type] = translation.estimated_cost

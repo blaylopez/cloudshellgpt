@@ -3,6 +3,7 @@
 This allows CloudShellGPT to be used as a tool from Kiro, Claude Desktop,
 Cursor, and other MCP-compatible clients.
 """
+
 from __future__ import annotations
 
 import json
@@ -10,18 +11,17 @@ from typing import Any
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
-from cloudshellgpt.intent import IntentParser
 from cloudshellgpt.bedrock_translator import BedrockTranslator
-from cloudshellgpt.safety import SafetyLayer
 from cloudshellgpt.executor import AWSExecutor
-
+from cloudshellgpt.intent import IntentParser
+from cloudshellgpt.safety import SafetyLayer
 
 server = Server("cloudshellgpt")
 
 
-@server.list_tools()
+@server.list_tools()  # type: ignore[no-untyped-call, untyped-decorator]
 async def list_tools() -> list[Tool]:
     """List available MCP tools."""
     return [
@@ -106,7 +106,7 @@ async def list_tools() -> list[Tool]:
     ]
 
 
-@server.call_tool()
+@server.call_tool()  # type: ignore[untyped-decorator]
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     """Handle tool calls from MCP clients."""
     try:
