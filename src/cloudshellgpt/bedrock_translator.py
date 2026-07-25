@@ -262,7 +262,7 @@ Output: {
 
         for attempt in range(self.max_retries + 1):
             try:
-                return self.client.converse(
+                return self.client.converse(  # type: ignore[no-any-return]
                     modelId=self.MODEL_ID,
                     messages=[
                         {
@@ -344,7 +344,7 @@ Output: {
         """
         exponential_delay = self.base_delay * (2**attempt)
         jitter = random.uniform(0, self.MAX_JITTER)  # noqa: S311
-        return exponential_delay + jitter
+        return exponential_delay + jitter  # type: ignore[no-any-return]
 
     def _parse_response(self, response: dict[str, Any]) -> Translation:
         """Parse and validate the Bedrock Converse API response.
