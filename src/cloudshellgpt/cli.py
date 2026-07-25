@@ -68,10 +68,16 @@ def ask(
         # Lazy imports for command execution
         from cloudshellgpt.audit import AuditLogger
         from cloudshellgpt.bedrock_translator import BedrockError, BedrockTranslator
+        from cloudshellgpt.config import Config
+        from cloudshellgpt.cost import CostEstimator
         from cloudshellgpt.executor import AWSExecutor
         from cloudshellgpt.formatter import Formatter, FormatType
         from cloudshellgpt.intent import IntentParser
         from cloudshellgpt.safety import SafetyLayer
+
+        # Load user configuration
+        cfg = Config()
+        effective_region = region or cfg.region
 
         # 1. Parse intent
         parser = IntentParser()
@@ -90,20 +96,43 @@ def ask(
             _show_bedrock_error(e)
             raise typer.Exit(1) from None
 
-        # 3. Safety check
-        safety = SafetyLayer()
-        check = safety.assess(translation)
+        # 3. Cost estimation (graceful fallback if Cost Explorer fails)
+        cost_estimator = CostEstimator(region=effective_region, max_cost_alert=cfg.max_cost_alert)
+        cost_estimate = cost_estimator.estimate(translation.command)
+
+        # 4. Safety check (with cost estimate integrated)
+        safety = SafetyLayer(region=effective_region, max_cost_alert=cfg.max_cost_alert)
+        check = safety.assess(translation, cost_estimate=cost_estimate)
 
         if cost_only:
-            console.print(
-                Panel(
-                    f"Estimated cost: {check.estimated_cost}",
-                    title="[bold]Cost Preview[/bold]",
+            if cost_estimate.status == "unknown":
+                console.print(
+                    Panel(
+                        "[bold yellow]Cost estimation unavailable[/bold yellow]\n"
+                        "[dim]Cost Explorer API could not be reached.[/dim]",
+                        title="[bold]Cost Preview[/bold]",
+                        border_style="yellow",
+                    )
                 )
-            )
+            else:
+                console.print(
+                    Panel(
+                        f"Estimated cost: {check.estimated_cost}",
+                        title="[bold]Cost Preview[/bold]",
+                    )
+                )
             return
 
-        # 4. Show what we're about to do
+        # 5. Show warning if cost estimation is unavailable
+        if cost_estimate.status == "unknown":
+            console.print(
+                Text.from_markup(
+                    "[bold yellow]\u26a0\ufe0f  Cost estimation unavailable "
+                    "\u2014 proceed with caution[/bold yellow]"
+                )
+            )
+
+        # 6. Show what we're about to do
         console.print(
             Panel(
                 f"[bold]Command:[/bold]\n[cyan]{translation.command}[/cyan]\n\n"
@@ -115,18 +144,18 @@ def ask(
             )
         )
 
-        # 5. Confirm if needed
+        # 7. Confirm if needed
         if check.requires_confirmation and not yes:
             confirmed = typer.confirm(f"\n{check.confirmation_prompt}", default=False)
             if not confirmed:
                 console.print("[yellow]Cancelled.[/yellow]")
                 raise typer.Exit(0)
 
-        # 6. Execute
+        # 8. Execute
         executor = AWSExecutor(dry_run=dry_run or check.requires_dry_run)
         result = executor.run(translation.command)
 
-        # 7. Audit
+        # 9. Audit
         AuditLogger().log(
             intent=intent,
             command=translation.command,
@@ -135,7 +164,7 @@ def ask(
             result=result,
         )
 
-        # 8. Format output
+        # 10. Format output
         format_type: FormatType = cast(
             FormatType,
             output if output in ("table", "json", "yaml", "csv", "raw") else "table",
