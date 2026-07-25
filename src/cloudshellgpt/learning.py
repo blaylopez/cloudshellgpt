@@ -89,27 +89,37 @@ class TutorialRunner:
 class Explainer:
     """Explains what AWS CLI commands do in detail."""
 
-    def __init__(self) -> None:
+    MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    REGION = "us-east-1"
+
+    EXPLAIN_SYSTEM_PROMPT = (
+        "Explain AWS CLI commands in detail. For each command, break down:\n"
+        "1. What service and operation it uses\n"
+        "2. Each non-obvious flag and its purpose\n"
+        "3. The expected output format\n"
+        "4. Common pitfalls\n"
+        "5. Link to relevant AWS docs (markdown format)\n\n"
+        "Provide a clear, educational explanation. Use markdown."
+    )
+
+    def __init__(self, region: str = REGION) -> None:
         self.console = Console()
-        self.bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
+        self.bedrock = boto3.client("bedrock-runtime", region_name=region)
 
     def explain_sync(self, command: str) -> str:
-        """Generate a detailed explanation of a command (sync, for MCP)."""
-        prompt = f"""Explain this AWS CLI command in detail. Break down:
-1. What service and operation it uses
-2. Each non-obvious flag and its purpose
-3. The expected output format
-4. Common pitfalls
-5. Link to relevant AWS docs (markdown format)
+        """Generate a detailed explanation of a command (sync, for MCP).
 
-Command: {command}
+        Args:
+            command: The AWS CLI command to explain.
 
-Provide a clear, educational explanation. Use markdown."""
-
+        Returns:
+            A markdown-formatted explanation string.
+        """
         try:
             response = self.bedrock.converse(
-                modelId="anthropic.claude-3-5-sonnet-20241022-v2:0",
-                messages=[{"role": "user", "content": [{"text": prompt}]}],
+                modelId=self.MODEL_ID,
+                messages=[{"role": "user", "content": [{"text": command}]}],
+                system=[{"text": self.EXPLAIN_SYSTEM_PROMPT}],
                 inferenceConfig={"maxTokens": 1024, "temperature": 0.3},
             )
             result: str = response["output"]["message"]["content"][0]["text"]

@@ -621,6 +621,9 @@ def _detect_service(text: str) -> str | None:
     Returns:
         Service identifier string or None if not detected.
     """
+    # TODO: implementar scoring por cantidad de keywords matcheados en vez de "first match wins".
+    # Cuando el input contiene keywords de múltiples servicios, el actual retorna el primero
+    # que encuentra en el orden del diccionario, lo cual puede ser incorrecto.
     for service, keywords in SERVICE_KEYWORDS.items():
         for kw in keywords:
             if " " in kw:

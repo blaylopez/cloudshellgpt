@@ -24,6 +24,37 @@
         "chatSessionId": "sess_c786ea23-0eab-49ba-9fd2-223cbbd7f54e",
         "timestamp": 1784850612539
       }
+    ],
+    "Retry exponencial para errores transitorios": [
+      {
+        "executionId": "b6a0ee08-391f-4ab6-85dd-0dd8f39f3207",
+        "chatSessionId": "sess_5275d37d-a21e-4d63-9fcf-9e80c258e8b7",
+        "timestamp": 1784913751328
+      }
+    ],
+    "Tests parametrizados para IntentParser — edge cases: input vacío, solo espacios, unicode raro, texto > 500 chars, idioma mixto (ES+EN), emojis": [
+      {
+        "executionId": "f03a69e1-c8ce-4d8d-ad7f-bb18aa3371f2",
+        "chatSessionId": "sess_bcec6368-1556-4e7e-be6d-214030ba099a",
+        "timestamp": 1784937225057
+      },
+      {
+        "executionId": "f03a69e1-c8ce-4d8d-ad7f-bb18aa3371f2",
+        "chatSessionId": "sess_bcec6368-1556-4e7e-be6d-214030ba099a",
+        "timestamp": 1784937685387
+      }
+    ],
+    "Tests de confianza: verificar que confidence < 0.7 cuando input es ambiguo (mínimo 10 inputs ambiguos variados)": [
+      {
+        "executionId": "d2236231-4af5-48ca-9800-14d591f90c52",
+        "chatSessionId": "sess_57494983-0a9a-445e-9bf1-a4613cc0b37a",
+        "timestamp": 1784937766029
+      },
+      {
+        "executionId": "d2236231-4af5-48ca-9800-14d591f90c52",
+        "chatSessionId": "sess_57494983-0a9a-445e-9bf1-a4613cc0b37a",
+        "timestamp": 1784937927906
+      }
     ]
   }
 }

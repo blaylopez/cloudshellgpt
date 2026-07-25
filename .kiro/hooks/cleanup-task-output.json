@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Limpiar archivos temporales de output post-tarea",
+      "trigger": "PostTaskExec",
+      "description": "Borra archivos test_*.txt y *output*.txt de la raíz del proyecto que quedan como residuo de ejecución de comandos durante tareas del spec.",
+      "action": {
+        "type": "command",
+        "command": "cmd /c \"del /q test_*.txt *output*.txt 2>nul || exit 0\"",
+        "timeout": 10
+      }
+    }
+  ]
+}
