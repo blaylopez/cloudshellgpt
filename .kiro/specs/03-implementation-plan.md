@@ -28,23 +28,23 @@
 #### Tareas
 - [x] Implementar `Intent` model (Pydantic BaseModel) en `src/cloudshellgpt/intent.py`
 - [x] Implementar IntentParser con langdetect para detección de idioma
-- [ ] Implementar `Translation` model en `src/cloudshellgpt/bedrock_translator.py`
-- [ ] Cliente Bedrock con Converse API (`client.converse()`, nunca `invoke_model`)
-- [ ] System prompts como constantes de clase (nunca inline)
-- [ ] Configurar temperature=0.2 para translation, max_tokens=2048
-- [ ] Manejo de BedrockError con mensaje user-facing
-- [ ] Retry exponencial para errores transitorios
-- [ ] Implementar `ConfigManager` en `src/cloudshellgpt/config.py` (Pydantic Settings)
-- [ ] Config file: `~/.csgpt/config.yaml` con defaults
-- [ ] Tests parametrizados para IntentParser — detección de idioma (mínimo 5 inputs por cada uno de los 6 idiomas = 30 casos)
-- [ ] Tests parametrizados para IntentParser — detección de servicio (mínimo 3 inputs por cada uno de los 10 servicios = 30 casos)
-- [ ] Tests parametrizados para IntentParser — detección de acción (mínimo 3 inputs por cada una de las 6 acciones = 18 casos)
-- [ ] Tests parametrizados para IntentParser — edge cases: input vacío, solo espacios, unicode raro, texto > 500 chars, idioma mixto (ES+EN), emojis
-- [ ] Tests de confianza: verificar que confidence < 0.7 cuando input es ambiguo (mínimo 10 inputs ambiguos variados)
-- [ ] Tests unitarios para BedrockTranslator (mocked boto3): response parsing, JSON extraction con/sin markdown fences, campos faltantes, response vacía
-- [ ] Tests unitarios para BedrockTranslator — error handling: timeout, throttling, invalid JSON, response truncada
-- [ ] Crear eval set inicial (`tests/eval/translation_eval.yaml`, 40 casos mínimo distribuidos: ≥ 5/idioma, ≥ 3/servicio, ≥ 5/riesgo)
-- [ ] **Checkpoint:** `csgpt "lista los buckets de S3"` traduce correctamente + tests pasan con > 95% de los casos parametrizados
+- [x] Implementar `Translation` model en `src/cloudshellgpt/bedrock_translator.py`
+- [x] Cliente Bedrock con Converse API (`client.converse()`, nunca `invoke_model`)
+- [x] System prompts como constantes de clase (nunca inline)
+- [x] Configurar temperature=0.2 para translation, max_tokens=2048
+- [x] Manejo de BedrockError con mensaje user-facing
+- [x] Retry exponencial para errores transitorios
+- [x] Implementar `ConfigManager` en `src/cloudshellgpt/config.py` (Pydantic Settings)
+- [x] Config file: `~/.csgpt/config.yaml` con defaults
+- [x] Tests parametrizados para IntentParser — detección de idioma (mínimo 5 inputs por cada uno de los 6 idiomas = 30 casos)
+- [x] Tests parametrizados para IntentParser — detección de servicio (mínimo 3 inputs por cada uno de los 10 servicios = 30 casos)
+- [x] Tests parametrizados para IntentParser — detección de acción (mínimo 3 inputs por cada una de las 6 acciones = 18 casos)
+- [x] Tests parametrizados para IntentParser — edge cases: input vacío, solo espacios, unicode raro, texto > 500 chars, idioma mixto (ES+EN), emojis
+- [x] Tests de confianza: verificar que confidence < 0.7 cuando input es ambiguo (mínimo 10 inputs ambiguos variados)
+- [x] Tests unitarios para BedrockTranslator (mocked boto3): response parsing, JSON extraction con/sin markdown fences, campos faltantes, response vacía
+- [x] Tests unitarios para BedrockTranslator — error handling: timeout, throttling, invalid JSON, response truncada
+- [x] Crear eval set inicial (`tests/eval/translation_eval.yaml`, 40 casos mínimo distribuidos: ≥ 5/idioma, ≥ 3/servicio, ≥ 5/riesgo)
+- [x] **Checkpoint:** `csgpt "lista los buckets de S3"` traduce correctamente + tests pasan con > 95% de los casos parametrizados
 
 ---
 
@@ -53,7 +53,7 @@
 **Goal:** Sistema de seguridad robusto con cost preview
 
 #### Tareas
-- [ ] Implementar `SafetyCheck` model en `src/cloudshellgpt/safety.py`
+- [x] Implementar `SafetyCheck` model en `src/cloudshellgpt/safety.py`
 - [ ] Risk classifier rule-based (low/medium/high/critical)
 - [ ] Implementar DESTRUCTIVE_PATTERNS list completa
 - [ ] Heurística: inverso directo → medium, destruye datos → high, duda → upgrade
