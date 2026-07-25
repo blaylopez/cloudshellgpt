@@ -73,7 +73,7 @@ exclude = [".kiro/", "*.md", "docs/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "A", "C4", "PT"]
-ignore = ["E501"]
+ignore = ["E501", "PT019"]
 
 [tool.mypy]
 python_version = "3.12"

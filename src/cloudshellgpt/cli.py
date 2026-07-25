@@ -6,7 +6,7 @@ Entry point for the CLI. Built with Typer for clean command structure.
 from __future__ import annotations
 
 import sys
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import typer
 from rich.console import Console
@@ -14,6 +14,9 @@ from rich.panel import Panel
 from rich.text import Text
 
 from cloudshellgpt import __version__
+
+if TYPE_CHECKING:
+    from cloudshellgpt.bedrock_translator import BedrockError
 
 app = typer.Typer(
     name="csgpt",
@@ -64,7 +67,7 @@ def ask(
     with console.status("[bold green]Thinking...[/bold green]"):
         # Lazy imports for command execution
         from cloudshellgpt.audit import AuditLogger
-        from cloudshellgpt.bedrock_translator import BedrockTranslator
+        from cloudshellgpt.bedrock_translator import BedrockError, BedrockTranslator
         from cloudshellgpt.executor import AWSExecutor
         from cloudshellgpt.formatter import Formatter, FormatType
         from cloudshellgpt.intent import IntentParser
@@ -81,7 +84,11 @@ def ask(
 
         # 2. Translate to AWS CLI via Bedrock
         translator = BedrockTranslator()
-        translation = translator.translate(parsed)
+        try:
+            translation = translator.translate(parsed)
+        except BedrockError as e:
+            _show_bedrock_error(e)
+            raise typer.Exit(1) from None
 
         # 3. Safety check
         safety = SafetyLayer()
@@ -205,6 +212,7 @@ def mcp(
 @app.command()
 def config(
     show: bool = typer.Option(False, "--show", help="Show current configuration"),
+    init: bool = typer.Option(False, "--init", help="Create or reset config file with defaults"),
     set_region: str | None = typer.Option(None, "--set-region", help="Set default region"),
     set_language: str | None = typer.Option(
         None, "--set-language", help="Set default output language"
@@ -215,7 +223,10 @@ def config(
 
     cfg = ConfigManager()
 
-    if show:
+    if init:
+        cfg.reset_defaults()
+        console.print(f"[green]Config file created with defaults at {cfg.config_path}[/green]")
+    elif show:
         console.print(Panel(cfg.to_yaml(), title="[bold]Configuration[/bold]"))
     elif set_region:
         cfg.set("region", set_region)
@@ -246,6 +257,28 @@ def main(
     ),
 ) -> None:
     """CloudShellGPT — AWS CLI that speaks your language."""
+
+
+def _show_bedrock_error(error: BedrockError) -> None:
+    """Display a BedrockError as a Rich panel with actionable info.
+
+    Args:
+        error: The structured BedrockError to display.
+    """
+    lines: list[str] = []
+    lines.append(f"[bold red]Error:[/bold red] {error.user_message}")
+    if error.suggestion:
+        lines.append(f"\n[bold yellow]Suggestion:[/bold yellow] {error.suggestion}")
+    if error.technical_detail:
+        lines.append(f"\n[dim]Detail: {error.technical_detail}[/dim]")
+
+    console.print(
+        Panel(
+            "\n".join(lines),
+            title=f"[bold red]Bedrock Error ({error.error_type.value})[/bold red]",
+            border_style="red",
+        )
+    )
 
 
 def _risk_color(level: str) -> str:
