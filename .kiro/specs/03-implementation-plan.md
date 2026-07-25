@@ -54,15 +54,15 @@
 
 #### Tareas
 - [x] Implementar `SafetyCheck` model en `src/cloudshellgpt/safety.py`
-- [ ] Risk classifier rule-based (low/medium/high/critical)
-- [ ] Implementar DESTRUCTIVE_PATTERNS list completa
-- [ ] Heurística: inverso directo → medium, destruye datos → high, duda → upgrade
-- [ ] LLM independence: upgradar risk vs Bedrock, nunca downgradar
-- [ ] Implementar `CostEstimate` model en `src/cloudshellgpt/cost.py`
-- [ ] Cost estimator con AWS Cost Explorer API
-- [ ] Integración safety ↔ cost: safety consume CostEstimate para alertar según max_cost_alert
-- [ ] Fallback si Cost Explorer falla: status="unknown", warning al usuario
-- [ ] Dry-run injection para servicios soportados (ec2, rds, s3api, iam, cloudformation, lambda)
+- [x] Risk classifier rule-based (low/medium/high/critical)
+- [x] Implementar DESTRUCTIVE_PATTERNS list completa
+- [x] Heurística: inverso directo → medium, destruye datos → high, duda → upgrade
+- [x] LLM independence: upgradar risk vs Bedrock, nunca downgradar
+- [x] Implementar `CostEstimate` model en `src/cloudshellgpt/cost.py`
+- [x] Cost estimator con AWS Cost Explorer API
+- [x] Integración safety ↔ cost: safety consume CostEstimate para alertar según max_cost_alert
+- [x] Fallback si Cost Explorer falla: status="unknown", warning al usuario
+- [x] Dry-run injection para servicios soportados (ec2, rds, s3api, iam, cloudformation, lambda)
 - [ ] Confirmation flow: low→execute, medium→Y/N, high→typed, critical→dry-run+"yes-i-understand"
 - [ ] Implementar AuditLogger en `src/cloudshellgpt/audit.py` (log ANTES de ejecutar)
 - [ ] Tests parametrizados para SafetyLayer — detección exhaustiva de TODOS los destructive patterns (parametrizar la lista completa: "delete", "terminate", "rm", "remove", "drop", "destroy", "force", "purge", "wipe", "nuke", "deregister", "revoke", "detach", "disable", "release", "empty", "--recursive", "--force", "-f", "--no-preserve", "--skip-final-snapshot", "--force-delete", "--permanently-delete", "--no-undo", "--force-destroy", "--delete-all-versions", "--bypass-governance-retention", "--no-preserve-root" = 28 casos mínimo)
