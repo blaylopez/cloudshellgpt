@@ -86,7 +86,9 @@ def ask(
         parsed = parser.parse(intent, region=region)
 
         # Get UI labels based on detected language
-        ui_lang = parsed.detected_language if parsed.detected_language != "unknown" else cfg.language
+        ui_lang = (
+            parsed.detected_language if parsed.detected_language != "unknown" else cfg.language
+        )
         labels = get_labels(ui_lang)
 
         if not parsed.confidence or parsed.confidence < 0.5:
@@ -95,9 +97,7 @@ def ask(
             raise typer.Exit(1)
 
         # 2. Translate to AWS CLI via Bedrock
-        translator = BedrockTranslator(
-            region=effective_region, model_id=cfg.bedrock_model
-        )
+        translator = BedrockTranslator(region=effective_region, model_id=cfg.bedrock_model)
         try:
             translation = translator.translate(parsed)
         except BedrockError as e:
@@ -231,9 +231,7 @@ def ask(
             if suggestions:
                 lines = []
                 for suggestion in suggestions:
-                    lines.append(
-                        f"  [cyan]{suggestion.command}[/cyan]  {suggestion.description}"
-                    )
+                    lines.append(f"  [cyan]{suggestion.command}[/cyan]  {suggestion.description}")
                 console.print(
                     Panel(
                         "\n".join(lines),
@@ -479,7 +477,9 @@ def _handle_confirmation(
         return
 
 
-def _confirm_high_risk(check: SafetyCheck, translation: Translation, labels: dict[str, str]) -> None:
+def _confirm_high_risk(
+    check: SafetyCheck, translation: Translation, labels: dict[str, str]
+) -> None:
     """Handle high-risk confirmation: require typed resource name."""
     resources_display = ", ".join(check.affected_resources) if check.affected_resources else "N/A"
     console.print(
@@ -495,10 +495,10 @@ def _confirm_high_risk(check: SafetyCheck, translation: Translation, labels: dic
 
     if check.affected_resources:
         expected = check.affected_resources[0]
-        prompt_text = f'\n{labels["type_resource"].format(resource=expected)}'
+        prompt_text = f"\n{labels['type_resource'].format(resource=expected)}"
     else:
         expected = "confirm"
-        prompt_text = f'\n{labels["type_confirm"]}'
+        prompt_text = f"\n{labels['type_confirm']}"
 
     user_input = typer.prompt(prompt_text)
     if user_input.strip() != expected:
@@ -569,9 +569,8 @@ def _confirm_critical_risk(
 
         # AWS dry-run returns non-zero exit code with "DryRunOperation" error
         # when the operation WOULD have succeeded. This is a success signal.
-        dry_run_success = (
-            dr_exec_result.exit_code == 0
-            or "DryRunOperation" in (dr_exec_result.stderr or "")
+        dry_run_success = dr_exec_result.exit_code == 0 or "DryRunOperation" in (
+            dr_exec_result.stderr or ""
         )
 
         if dry_run_success:
@@ -596,9 +595,7 @@ def _confirm_critical_risk(
             raise typer.Exit(1)
 
     # 3. Require typed confirmation
-    console.print(
-        f"\n[bold]{labels['type_yes_i_understand']}[/bold]"
-    )
+    console.print(f"\n[bold]{labels['type_yes_i_understand']}[/bold]")
     user_input = typer.prompt("Confirm")
     if user_input.strip() != "yes-i-understand":
         console.print(f"[yellow]{labels['confirmation_mismatch']}[/yellow]")
