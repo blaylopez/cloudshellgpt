@@ -90,7 +90,9 @@ def ask(
             raise typer.Exit(1)
 
         # 2. Translate to AWS CLI via Bedrock
-        translator = BedrockTranslator()
+        translator = BedrockTranslator(
+            region=effective_region, model_id=cfg.bedrock_model
+        )
         try:
             translation = translator.translate(parsed)
         except BedrockError as e:
@@ -240,9 +242,11 @@ def explain(
     last: bool = typer.Option(False, "--last", help="Explain the last executed command"),
 ) -> None:
     """Explain what an AWS CLI command does in detail."""
+    from cloudshellgpt.config import Config
     from cloudshellgpt.learning import Explainer
 
-    explainer = Explainer()
+    cfg = Config()
+    explainer = Explainer(region=cfg.region, model_id=cfg.bedrock_model)
     if last:
         explainer.explain_last()
     elif command:
