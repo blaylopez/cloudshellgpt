@@ -1,9 +1,9 @@
 # CloudShellGPT — Eval Set for Translation Pipeline
-# Distribution: ≥5 per language, ≥3 per service, ≥5 per risk level
-# Total cases: 52
+# Distribution: ≥15 per language, ≥8 per service, ≥25 per risk level (low/med/high), ≥15 critical
+# Total cases: 115 (ES:16, EN:16, PT:16, FR:16, DE:16, ZH:16, Edge:16, Gap-fill:4)
 
 # ============================================================
-# SPANISH (ES) — 9 cases
+# SPANISH (ES) — 16 cases
 # ============================================================
 
 - id: "ES-S3-LIST-001"
@@ -87,8 +87,71 @@
   expected_command_contains: ["sqs", "create-queue"]
   expected_command_not_contains: ["delete", "purge"]
 
+- id: "ES-CLOUDFRONT-DELETE-001"
+  input: "elimina la distribución de CloudFront E3XYZ789 --force"
+  language: "es"
+  expected_service: "cloudfront"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["cloudfront", "delete-distribution"]
+  expected_command_not_contains: ["create", "list"]
+
+- id: "ES-SNS-LIST-001"
+  input: "muestra todos los tópicos de SNS en la cuenta"
+  language: "es"
+  expected_service: "sns"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: ["sns", "list-topics"]
+  expected_command_not_contains: ["delete", "create"]
+
+- id: "ES-EC2-UPDATE-001"
+  input: "modifica el tipo de instancia EC2 i-abc123 a t3.large"
+  language: "es"
+  expected_service: "ec2"
+  expected_action: "update"
+  expected_risk: "medium"
+  expected_command_contains: ["ec2", "modify-instance-attribute"]
+  expected_command_not_contains: ["terminate", "delete"]
+
+- id: "ES-LAMBDA-DELETE-001"
+  input: "elimina la función Lambda procesar-reportes"
+  language: "es"
+  expected_service: "lambda"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["lambda", "delete-function"]
+  expected_command_not_contains: ["create", "invoke"]
+
+- id: "ES-IAM-LIST-001"
+  input: "lista todas las políticas IAM adjuntas al rol admin-role"
+  language: "es"
+  expected_service: "iam"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: ["iam", "list-attached-role-policies"]
+  expected_command_not_contains: ["delete", "create"]
+
+- id: "ES-RDS-DELETE-001"
+  input: "elimina la instancia RDS legacy-db sin snapshot final"
+  language: "es"
+  expected_service: "rds"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["rds", "delete-db-instance"]
+  expected_command_not_contains: ["create", "start"]
+
+- id: "ES-DYNAMODB-DELETE-001"
+  input: "borra la tabla DynamoDB registros-2022 permanentemente"
+  language: "es"
+  expected_service: "dynamodb"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["dynamodb", "delete-table"]
+  expected_command_not_contains: ["create", "put"]
+
 # ============================================================
-# ENGLISH (EN) — 10 cases
+# ENGLISH (EN) — 16 cases
 # ============================================================
 
 - id: "EN-S3-LIST-002"
@@ -181,8 +244,62 @@
   expected_command_contains: ["s3", "rm", "--recursive"]
   expected_command_not_contains: ["cp", "ls"]
 
+- id: "EN-VPC-CREATE-001"
+  input: "create a new VPC with CIDR block 10.0.0.0/16 in us-west-2"
+  language: "en"
+  expected_service: "vpc"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["ec2", "create-vpc"]
+  expected_command_not_contains: ["delete", "remove"]
+
+- id: "EN-DYNAMODB-CREATE-001"
+  input: "create a DynamoDB table called user-sessions with partition key session_id"
+  language: "en"
+  expected_service: "dynamodb"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["dynamodb", "create-table"]
+  expected_command_not_contains: ["delete", "remove"]
+
+- id: "EN-CLOUDFRONT-DELETE-001"
+  input: "delete CloudFront distribution E2ABC3DEF4GH permanently"
+  language: "en"
+  expected_service: "cloudfront"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["cloudfront", "delete-distribution"]
+  expected_command_not_contains: ["create", "list"]
+
+- id: "EN-LAMBDA-DELETE-001"
+  input: "delete Lambda function legacy-processor and all its versions"
+  language: "en"
+  expected_service: "lambda"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["lambda", "delete-function"]
+  expected_command_not_contains: ["create", "invoke"]
+
+- id: "EN-IAM-DELETE-001"
+  input: "delete IAM user contractor-temp immediately"
+  language: "en"
+  expected_service: "iam"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["iam", "delete-user"]
+  expected_command_not_contains: ["create", "list"]
+
+- id: "EN-EC2-DESCRIBE-001"
+  input: "describe all security groups in the default VPC"
+  language: "en"
+  expected_service: "vpc"
+  expected_action: "describe"
+  expected_risk: "low"
+  expected_command_contains: ["ec2", "describe-security-groups"]
+  expected_command_not_contains: ["terminate", "delete"]
+
 # ============================================================
-# PORTUGUESE (PT) — 9 cases
+# PORTUGUESE (PT) — 16 cases
 # ============================================================
 
 - id: "PT-S3-LIST-001"
@@ -266,8 +383,71 @@
   expected_command_contains: ["sns", "delete-topic"]
   expected_command_not_contains: ["create", "subscribe"]
 
+- id: "PT-SQS-LIST-001"
+  input: "listar todas as filas SQS disponíveis na região"
+  language: "pt"
+  expected_service: "sqs"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: ["sqs", "list-queues"]
+  expected_command_not_contains: ["delete", "purge"]
+
+- id: "PT-EC2-DELETE-001"
+  input: "terminar a instância EC2 i-0abc999def"
+  language: "pt"
+  expected_service: "ec2"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["ec2", "terminate-instances"]
+  expected_command_not_contains: ["run", "start"]
+
+- id: "PT-S3-DELETE-001"
+  input: "remover todos os objetos do bucket s3://dados-antigos recursivamente"
+  language: "pt"
+  expected_service: "s3"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["s3", "rm", "--recursive"]
+  expected_command_not_contains: ["cp", "ls"]
+
+- id: "PT-LAMBDA-DELETE-001"
+  input: "excluir a função Lambda migrador-legacy"
+  language: "pt"
+  expected_service: "lambda"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["lambda", "delete-function"]
+  expected_command_not_contains: ["create", "invoke"]
+
+- id: "PT-VPC-DELETE-001"
+  input: "deletar a subnet subnet-xyz789 da VPC"
+  language: "pt"
+  expected_service: "vpc"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["ec2", "delete-subnet"]
+  expected_command_not_contains: ["create", "describe"]
+
+- id: "PT-DYNAMODB-CREATE-001"
+  input: "criar uma tabela DynamoDB chamada pedidos com chave order_id"
+  language: "pt"
+  expected_service: "dynamodb"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["dynamodb", "create-table"]
+  expected_command_not_contains: ["delete", "remove"]
+
+- id: "PT-IAM-DELETE-001"
+  input: "remover o usuário IAM estagiario-2023 da conta"
+  language: "pt"
+  expected_service: "iam"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["iam", "delete-user"]
+  expected_command_not_contains: ["create", "list"]
+
 # ============================================================
-# FRENCH (FR) — 9 cases
+# FRENCH (FR) — 16 cases
 # ============================================================
 
 - id: "FR-S3-CREATE-001"
@@ -351,8 +531,71 @@
   expected_command_contains: ["rds", "delete-db-instance", "--skip-final-snapshot"]
   expected_command_not_contains: ["create", "start"]
 
+- id: "FR-EC2-DELETE-001"
+  input: "supprimer l'instance EC2 i-0789abc456"
+  language: "fr"
+  expected_service: "ec2"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["ec2", "terminate-instances"]
+  expected_command_not_contains: ["run", "start"]
+
+- id: "FR-CLOUDFRONT-DELETE-001"
+  input: "supprimer la distribution CloudFront E5JKL678MNO"
+  language: "fr"
+  expected_service: "cloudfront"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["cloudfront", "delete-distribution"]
+  expected_command_not_contains: ["create", "list"]
+
+- id: "FR-LAMBDA-INVOKE-001"
+  input: "invoquer la fonction Lambda traitement-csv avec le payload {\"file\": \"data.csv\"}"
+  language: "fr"
+  expected_service: "lambda"
+  expected_action: "invoke"
+  expected_risk: "medium"
+  expected_command_contains: ["lambda", "invoke"]
+  expected_command_not_contains: ["delete", "create"]
+
+- id: "FR-S3-DELETE-001"
+  input: "vider le bucket S3 s3://logs-temporaires récursivement"
+  language: "fr"
+  expected_service: "s3"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["s3", "rm", "--recursive"]
+  expected_command_not_contains: ["cp", "ls"]
+
+- id: "FR-IAM-DELETE-001"
+  input: "supprimer le rôle IAM ancien-deployeur"
+  language: "fr"
+  expected_service: "iam"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["iam", "delete-role"]
+  expected_command_not_contains: ["create", "list"]
+
+- id: "FR-DYNAMODB-DELETE-001"
+  input: "supprimer la table DynamoDB sessions-expirees"
+  language: "fr"
+  expected_service: "dynamodb"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["dynamodb", "delete-table"]
+  expected_command_not_contains: ["create", "put"]
+
+- id: "FR-VPC-DELETE-001"
+  input: "supprimer le VPC vpc-ancien123 et toutes ses ressources"
+  language: "fr"
+  expected_service: "vpc"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["ec2", "delete-vpc"]
+  expected_command_not_contains: ["create", "describe"]
+
 # ============================================================
-# GERMAN (DE) — 8 cases
+# GERMAN (DE) — 16 cases
 # ============================================================
 
 - id: "DE-S3-DESCRIBE-001"
@@ -427,8 +670,80 @@
   expected_command_contains: ["sqs", "set-queue-attributes"]
   expected_command_not_contains: ["delete", "create"]
 
+- id: "DE-RDS-CREATE-001"
+  input: "erstelle eine neue RDS PostgreSQL-Instanz mit db.t3.medium"
+  language: "de"
+  expected_service: "rds"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["rds", "create-db-instance"]
+  expected_command_not_contains: ["delete", "terminate"]
+
+- id: "DE-SNS-CREATE-001"
+  input: "erstelle ein neues SNS-Thema namens system-benachrichtigungen"
+  language: "de"
+  expected_service: "sns"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["sns", "create-topic"]
+  expected_command_not_contains: ["delete", "remove"]
+
+- id: "DE-S3-DELETE-001"
+  input: "lösche alle Objekte im Bucket s3://alte-backups rekursiv"
+  language: "de"
+  expected_service: "s3"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["s3", "rm", "--recursive"]
+  expected_command_not_contains: ["cp", "ls"]
+
+- id: "DE-LAMBDA-INVOKE-001"
+  input: "führe die Lambda-Funktion daten-export mit Payload {\"format\": \"csv\"} aus"
+  language: "de"
+  expected_service: "lambda"
+  expected_action: "invoke"
+  expected_risk: "medium"
+  expected_command_contains: ["lambda", "invoke"]
+  expected_command_not_contains: ["delete", "create"]
+
+- id: "DE-EC2-CREATE-001"
+  input: "starte eine neue EC2-Instanz vom Typ t3.small mit Amazon Linux"
+  language: "de"
+  expected_service: "ec2"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["ec2", "run-instances"]
+  expected_command_not_contains: ["terminate", "stop"]
+
+- id: "DE-DYNAMODB-DELETE-001"
+  input: "lösche die DynamoDB-Tabelle alte-sitzungen permanent"
+  language: "de"
+  expected_service: "dynamodb"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["dynamodb", "delete-table"]
+  expected_command_not_contains: ["create", "put"]
+
+- id: "DE-RDS-DELETE-001"
+  input: "lösche die RDS-Instanz test-db ohne finalen Snapshot"
+  language: "de"
+  expected_service: "rds"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["rds", "delete-db-instance", "--skip-final-snapshot"]
+  expected_command_not_contains: ["create", "start"]
+
+- id: "DE-CLOUDFRONT-DELETE-001"
+  input: "entferne die CloudFront-Distribution E7PQR890STU"
+  language: "de"
+  expected_service: "cloudfront"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["cloudfront", "delete-distribution"]
+  expected_command_not_contains: ["create", "list"]
+
 # ============================================================
-# CHINESE (ZH) — 7 cases
+# CHINESE (ZH) — 16 cases
 # ============================================================
 
 - id: "ZH-S3-DELETE-001"
@@ -493,3 +808,279 @@
   expected_risk: "critical"
   expected_command_contains: ["cloudfront", "delete-distribution"]
   expected_command_not_contains: ["create", "list"]
+
+- id: "ZH-VPC-CREATE-001"
+  input: "创建一个新的VPC，CIDR为172.16.0.0/16"
+  language: "zh-cn"
+  expected_service: "vpc"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["ec2", "create-vpc"]
+  expected_command_not_contains: ["delete", "remove"]
+
+- id: "ZH-SQS-CREATE-001"
+  input: "创建一个SQS队列叫做订单处理队列"
+  language: "zh-cn"
+  expected_service: "sqs"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["sqs", "create-queue"]
+  expected_command_not_contains: ["delete", "purge"]
+
+- id: "ZH-SNS-LIST-001"
+  input: "列出所有SNS主题"
+  language: "zh-cn"
+  expected_service: "sns"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: ["sns", "list-topics"]
+  expected_command_not_contains: ["delete", "create"]
+
+- id: "ZH-S3-CREATE-001"
+  input: "创建一个新的S3存储桶叫做数据备份-2024"
+  language: "zh-cn"
+  expected_service: "s3"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["s3api", "create-bucket"]
+  expected_command_not_contains: ["delete", "rm"]
+
+- id: "ZH-EC2-DELETE-001"
+  input: "终止EC2实例i-0xyz789abc"
+  language: "zh-cn"
+  expected_service: "ec2"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["ec2", "terminate-instances"]
+  expected_command_not_contains: ["run", "start"]
+
+- id: "ZH-IAM-DELETE-001"
+  input: "删除IAM用户临时开发者"
+  language: "zh-cn"
+  expected_service: "iam"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["iam", "delete-user"]
+  expected_command_not_contains: ["create", "list"]
+
+- id: "ZH-LAMBDA-DELETE-001"
+  input: "删除Lambda函数旧版数据处理器"
+  language: "zh-cn"
+  expected_service: "lambda"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["lambda", "delete-function"]
+  expected_command_not_contains: ["create", "invoke"]
+
+- id: "ZH-DYNAMODB-DELETE-001"
+  input: "删除DynamoDB表过期会话数据"
+  language: "zh-cn"
+  expected_service: "dynamodb"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["dynamodb", "delete-table"]
+  expected_command_not_contains: ["create", "put"]
+
+# ============================================================
+# EDGE CASES — 16 cases
+# ============================================================
+
+# Ambiguous input — could map to multiple services
+- id: "EDGE-AMBIGUOUS-001"
+  input: "delete everything"
+  language: "en"
+  expected_service: "unknown"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["delete"]
+  expected_command_not_contains: []
+
+# Ambiguous input — vague action
+- id: "EDGE-AMBIGUOUS-002"
+  input: "haz algo con la base de datos"
+  language: "es"
+  expected_service: "rds"
+  expected_action: "unknown"
+  expected_risk: "low"
+  expected_command_contains: ["rds"]
+  expected_command_not_contains: ["delete"]
+
+# Mixed language — Spanish + English
+- id: "EDGE-MIXED-LANG-001"
+  input: "lista los buckets de S3 in the us-west-2 region please"
+  language: "mixed"
+  expected_service: "s3"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: ["s3", "ls"]
+  expected_command_not_contains: ["delete", "rm"]
+
+# Mixed language — French + English
+- id: "EDGE-MIXED-LANG-002"
+  input: "create une instance EC2 de type t3.micro s'il vous plaît"
+  language: "mixed"
+  expected_service: "ec2"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["ec2", "run-instances"]
+  expected_command_not_contains: ["terminate", "stop"]
+
+# Mixed language — Portuguese + English
+- id: "EDGE-MIXED-LANG-003"
+  input: "delete a tabela DynamoDB sessoes-velhas please"
+  language: "mixed"
+  expected_service: "dynamodb"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["dynamodb", "delete-table"]
+  expected_command_not_contains: ["create", "put"]
+
+# Empty input
+- id: "EDGE-EMPTY-001"
+  input: ""
+  language: "en"
+  expected_service: "s3"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: []
+  expected_command_not_contains: []
+
+# Whitespace-only input
+- id: "EDGE-EMPTY-002"
+  input: "   \t  \n  "
+  language: "en"
+  expected_service: "s3"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: []
+  expected_command_not_contains: []
+
+# Unicode characters
+- id: "EDGE-UNICODE-001"
+  input: "créer un bucket S3 nommé données-été-2024"
+  language: "fr"
+  expected_service: "s3"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["s3api", "create-bucket"]
+  expected_command_not_contains: ["delete", "rm"]
+
+# Unicode — CJK characters in resource name
+- id: "EDGE-UNICODE-002"
+  input: "创建S3存储桶名字叫做テスト数据桶"
+  language: "zh-cn"
+  expected_service: "s3"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["s3api", "create-bucket"]
+  expected_command_not_contains: ["delete", "rm"]
+
+# Very long input (>200 chars)
+- id: "EDGE-LONG-001"
+  input: "I need you to please create a brand new Amazon S3 bucket in the us-east-1 region with the name my-very-important-production-data-backup-bucket-2024-quarterly-reports-financial-documents-that-must-be-stored-securely-with-encryption-enabled"
+  language: "en"
+  expected_service: "s3"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["s3api", "create-bucket"]
+  expected_command_not_contains: ["delete", "rm"]
+
+# Very long input with multiple services mentioned
+- id: "EDGE-LONG-002"
+  input: "quiero que primero me listes todos los buckets de S3, después me muestres las instancias EC2 que están corriendo, luego verifiques las funciones Lambda disponibles y finalmente me des un resumen de las tablas DynamoDB existentes en la cuenta de producción de AWS"
+  language: "es"
+  expected_service: "dynamodb"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: ["s3"]
+  expected_command_not_contains: ["delete"]
+
+# Input with emojis
+- id: "EDGE-EMOJI-001"
+  input: "🚀 launch a new EC2 instance t3.micro 💻"
+  language: "en"
+  expected_service: "ec2"
+  expected_action: "create"
+  expected_risk: "medium"
+  expected_command_contains: ["ec2", "run-instances"]
+  expected_command_not_contains: ["terminate", "stop"]
+
+# Input with emojis — destructive
+- id: "EDGE-EMOJI-002"
+  input: "🗑️ borra todos los datos del bucket s3://produccion 🔥"
+  language: "es"
+  expected_service: "s3"
+  expected_action: "delete"
+  expected_risk: "critical"
+  expected_command_contains: ["s3", "rm", "--recursive"]
+  expected_command_not_contains: ["cp", "ls"]
+
+# Input that doesn't map to any known service
+- id: "EDGE-NO-SERVICE-001"
+  input: "what is the weather like today in Seattle?"
+  language: "en"
+  expected_service: "unknown"
+  expected_action: "unknown"
+  expected_risk: "low"
+  expected_command_contains: []
+  expected_command_not_contains: []
+
+# Input that doesn't map to any service — different language
+- id: "EDGE-NO-SERVICE-002"
+  input: "cuál es la receta para hacer una tortilla española"
+  language: "es"
+  expected_service: "unknown"
+  expected_action: "unknown"
+  expected_risk: "low"
+  expected_command_contains: []
+  expected_command_not_contains: []
+
+# Ambiguous — typos and informal language
+- id: "EDGE-AMBIGUOUS-003"
+  input: "oye borrame esa cosa de lamda q ya no sirve"
+  language: "es"
+  expected_service: "lambda"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["lambda", "delete-function"]
+  expected_command_not_contains: ["create", "invoke"]
+
+# ============================================================
+# ADDITIONAL COVERAGE — SNS/SQS gap fill (4 cases)
+# ============================================================
+
+- id: "EN-SNS-DELETE-001"
+  input: "delete the SNS topic arn:aws:sns:us-east-1:123456:old-alerts"
+  language: "en"
+  expected_service: "sns"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["sns", "delete-topic"]
+  expected_command_not_contains: ["create", "subscribe"]
+
+- id: "DE-SNS-DELETE-001"
+  input: "lösche das SNS-Thema alte-benachrichtigungen"
+  language: "de"
+  expected_service: "sns"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["sns", "delete-topic"]
+  expected_command_not_contains: ["create", "subscribe"]
+
+- id: "EN-SQS-LIST-001"
+  input: "list all SQS queues with prefix order-"
+  language: "en"
+  expected_service: "sqs"
+  expected_action: "list"
+  expected_risk: "low"
+  expected_command_contains: ["sqs", "list-queues"]
+  expected_command_not_contains: ["delete", "purge"]
+
+- id: "ZH-SQS-DELETE-001"
+  input: "删除SQS队列旧消息处理"
+  language: "zh-cn"
+  expected_service: "sqs"
+  expected_action: "delete"
+  expected_risk: "high"
+  expected_command_contains: ["sqs", "delete-queue"]
+  expected_command_not_contains: ["create", "send"]

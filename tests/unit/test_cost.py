@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from botocore.exceptions import ClientError
 
-from cloudshellgpt.cost import CostEstimate, CostEstimator
+from cloudshellgpt.cost import CostEstimate, CostEstimator, CostTracker
 
 # ---------------------------------------------------------------------------
 # Service detection
@@ -354,3 +354,311 @@ class TestCostEstimateModel:
         assert estimate.estimated_monthly_cost == 120.0
         assert len(estimate.cost_breakdown) == 2
         assert estimate.warnings == ["exceeds threshold"]
+
+
+# ---------------------------------------------------------------------------
+# CostTracker — session tracking
+# ---------------------------------------------------------------------------
+
+
+class TestCostTracker:
+    """Tests for CostTracker session tracking, persistence, and summary."""
+
+    @pytest.mark.unit
+    def test_track_adds_entry_to_session(self, tmp_cost_tracker: CostTracker) -> None:
+        """Tracking a command persists it to the YAML session file."""
+        tmp_cost_tracker.track("aws ec2 run-instances", "$45.50")
+
+        assert tmp_cost_tracker.session_path.exists()
+        import yaml
+
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+
+        assert len(data) == 1
+        assert data[0]["command"] == "aws ec2 run-instances"
+        assert data[0]["estimated_cost"] == "$45.50"
+        assert "timestamp" in data[0]
+
+    @pytest.mark.unit
+    def test_session_summary_with_tracked_items(self, tmp_cost_tracker: CostTracker) -> None:
+        """session_summary returns a string containing tracked commands and costs."""
+        tmp_cost_tracker.track("aws ec2 run-instances", "$45.50")
+        tmp_cost_tracker.track("aws s3 create-bucket", "$3.00")
+
+        summary = tmp_cost_tracker.session_summary()
+
+        assert "aws ec2 run-instances" in summary
+        assert "$45.50" in summary
+        assert "aws s3 create-bucket" in summary
+        assert "$3.00" in summary
+        assert "2 operations" in summary
+
+    @pytest.mark.unit
+    def test_session_summary_empty(self, tmp_cost_tracker: CostTracker) -> None:
+        """session_summary returns a 'no costs' message when nothing tracked."""
+        summary = tmp_cost_tracker.session_summary()
+
+        assert "No costs tracked" in summary
+
+    @pytest.mark.unit
+    def test_track_truncates_long_commands(self, tmp_cost_tracker: CostTracker) -> None:
+        """Commands longer than 200 characters are truncated when persisted."""
+        long_command = "aws ec2 run-instances " + "x" * 250
+
+        tmp_cost_tracker.track(long_command, "$10.00")
+
+        import yaml
+
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+
+        assert len(data[0]["command"]) == 200
+
+    @pytest.mark.unit
+    def test_multiple_tracks_accumulate(self, tmp_cost_tracker: CostTracker) -> None:
+        """Multiple track() calls accumulate all entries in the session file."""
+        tmp_cost_tracker.track("aws ec2 run-instances", "$45.50")
+        tmp_cost_tracker.track("aws rds create-db-instance", "$120.00")
+        tmp_cost_tracker.track("aws s3api create-bucket", "$0.50")
+
+        import yaml
+
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+
+        assert len(data) == 3
+        assert data[0]["command"] == "aws ec2 run-instances"
+        assert data[1]["command"] == "aws rds create-db-instance"
+        assert data[2]["command"] == "aws s3api create-bucket"
+
+    @pytest.mark.unit
+    def test_clear_removes_session_data(self, tmp_cost_tracker: CostTracker) -> None:
+        """clear() removes the session file and summary returns empty message."""
+        tmp_cost_tracker.track("aws ec2 run-instances", "$45.50")
+        tmp_cost_tracker.track("aws s3 ls", "$0.00")
+
+        tmp_cost_tracker.clear()
+
+        assert not tmp_cost_tracker.session_path.exists()
+        assert "No costs tracked" in tmp_cost_tracker.session_summary()
+
+    @pytest.mark.unit
+    def test_track_with_unknown_cost_string(self, tmp_cost_tracker: CostTracker) -> None:
+        """Tracking an item with 'unknown' cost persists correctly and summary works."""
+        tmp_cost_tracker.track("aws ec2 run-instances", "unknown")
+
+        import yaml
+
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+
+        assert data[0]["estimated_cost"] == "unknown"
+
+        summary = tmp_cost_tracker.session_summary()
+        assert "unknown" in summary
+        assert "1 operations" in summary
+
+    @pytest.mark.unit
+    def test_session_summary_shows_all_costs(self, tmp_cost_tracker: CostTracker) -> None:
+        """Summary faithfully includes all tracked costs regardless of amount."""
+        tmp_cost_tracker.track("aws ec2 run-instances --instance-type m5.4xlarge", "$160.00")
+        tmp_cost_tracker.track("aws s3api create-bucket --bucket test", "$0.50")
+        tmp_cost_tracker.track("aws rds create-db-instance", "$250.00")
+
+        summary = tmp_cost_tracker.session_summary()
+
+        assert "$160.00" in summary
+        assert "$0.50" in summary
+        assert "$250.00" in summary
+        assert "3 operations" in summary
+
+
+# ---------------------------------------------------------------------------
+# CostTracker — cumulative session accumulation
+# ---------------------------------------------------------------------------
+
+
+class TestCostTrackerSessionAccumulation:
+    """Tests for CostTracker cumulative session tracking behavior.
+
+    Verifies that multiple track() calls accumulate correctly, that order is
+    preserved, and that session_summary reflects all tracked items.
+    """
+
+    @pytest.mark.unit
+    def test_five_tracks_accumulate_in_order(self, tmp_cost_tracker: CostTracker) -> None:
+        """Five track() calls persist all entries in insertion order."""
+        import yaml
+
+        commands = [
+            ("aws ec2 run-instances --instance-type t3.micro", "$45.50"),
+            ("aws s3api create-bucket --bucket demo", "$0.50"),
+            ("aws rds create-db-instance --db-instance-id prod", "$120.00"),
+            ("aws lambda create-function --function-name handler", "$5.00"),
+            ("aws dynamodb create-table --table-name users", "$25.00"),
+        ]
+
+        for cmd, cost in commands:
+            tmp_cost_tracker.track(cmd, cost)
+
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+
+        assert len(data) == 5
+        for i, (cmd, cost) in enumerate(commands):
+            assert data[i]["command"] == cmd
+            assert data[i]["estimated_cost"] == cost
+            assert "timestamp" in data[i]
+
+    @pytest.mark.unit
+    def test_session_summary_reflects_all_five_items(self, tmp_cost_tracker: CostTracker) -> None:
+        """session_summary contains all commands, costs, and correct count after 5 tracks."""
+        commands = [
+            ("aws ec2 run-instances", "$45.50"),
+            ("aws s3api create-bucket", "$0.50"),
+            ("aws rds create-db-instance", "$120.00"),
+            ("aws lambda create-function", "$5.00"),
+            ("aws dynamodb create-table", "$25.00"),
+        ]
+
+        for cmd, cost in commands:
+            tmp_cost_tracker.track(cmd, cost)
+
+        summary = tmp_cost_tracker.session_summary()
+
+        for cmd, cost in commands:
+            assert cmd in summary, f"Command '{cmd}' not found in summary"
+            assert cost in summary, f"Cost '{cost}' not found in summary"
+
+        assert "5 operations" in summary
+
+    @pytest.mark.unit
+    def test_step_by_step_accumulation_does_not_overwrite(
+        self, tmp_cost_tracker: CostTracker
+    ) -> None:
+        """Each individual track() adds to existing entries without overwriting."""
+        import yaml
+
+        # Track first entry and verify
+        tmp_cost_tracker.track("aws ec2 describe-instances", "$0.00")
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+        assert len(data) == 1
+        assert data[0]["command"] == "aws ec2 describe-instances"
+
+        # Track second entry and verify both exist
+        tmp_cost_tracker.track("aws s3 ls", "$0.00")
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+        assert len(data) == 2
+        assert data[0]["command"] == "aws ec2 describe-instances"
+        assert data[1]["command"] == "aws s3 ls"
+
+        # Track third entry and verify all three exist
+        tmp_cost_tracker.track("aws rds create-db-instance", "$80.00")
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+        assert len(data) == 3
+        assert data[0]["command"] == "aws ec2 describe-instances"
+        assert data[1]["command"] == "aws s3 ls"
+        assert data[2]["command"] == "aws rds create-db-instance"
+
+        # Track fourth entry and verify accumulation
+        tmp_cost_tracker.track("aws lambda invoke --function-name fn out.json", "$0.01")
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+        assert len(data) == 4
+        assert data[3]["command"] == "aws lambda invoke --function-name fn out.json"
+
+    @pytest.mark.unit
+    def test_clear_then_retrack_shows_only_new_items(self, tmp_cost_tracker: CostTracker) -> None:
+        """After clear() and re-tracking, summary only contains new items."""
+        # Track initial items
+        tmp_cost_tracker.track("aws ec2 run-instances", "$45.50")
+        tmp_cost_tracker.track("aws rds create-db-instance", "$120.00")
+        tmp_cost_tracker.track("aws s3api create-bucket", "$0.50")
+
+        # Verify initial state
+        summary_before = tmp_cost_tracker.session_summary()
+        assert "3 operations" in summary_before
+
+        # Clear the session
+        tmp_cost_tracker.clear()
+
+        # Track new items
+        tmp_cost_tracker.track("aws lambda create-function", "$5.00")
+        tmp_cost_tracker.track("aws dynamodb create-table", "$25.00")
+
+        # Verify summary only shows new items
+        summary_after = tmp_cost_tracker.session_summary()
+        assert "2 operations" in summary_after
+        assert "aws lambda create-function" in summary_after
+        assert "$5.00" in summary_after
+        assert "aws dynamodb create-table" in summary_after
+        assert "$25.00" in summary_after
+
+        # Old items must NOT appear
+        assert "aws ec2 run-instances" not in summary_after
+        assert "$45.50" not in summary_after
+        assert "$120.00" not in summary_after
+
+    @pytest.mark.unit
+    def test_large_accumulation_twelve_items(self, tmp_cost_tracker: CostTracker) -> None:
+        """Tracking 12 items accumulates all and summary includes every one."""
+        import yaml
+
+        commands = [
+            ("aws ec2 run-instances --instance-type t3.micro", "$45.50"),
+            ("aws s3api create-bucket --bucket alpha", "$0.50"),
+            ("aws rds create-db-instance --db-instance-id db1", "$120.00"),
+            ("aws lambda create-function --function-name fn1", "$5.00"),
+            ("aws dynamodb create-table --table-name tbl1", "$25.00"),
+            ("aws ecs create-cluster --cluster-name cl1", "$30.00"),
+            ("aws eks create-cluster --name eks1", "$73.00"),
+            ("aws sqs create-queue --queue-name q1", "$0.40"),
+            ("aws sns create-topic --name topic1", "$0.00"),
+            ("aws elasticache create-cache-cluster --cache-cluster-id c1", "$50.00"),
+            ("aws redshift create-cluster --cluster-identifier rs1", "$200.00"),
+            ("aws kinesis create-stream --stream-name s1", "$15.00"),
+        ]
+
+        for cmd, cost in commands:
+            tmp_cost_tracker.track(cmd, cost)
+
+        # Verify YAML file has all 12 entries
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+        assert len(data) == 12
+
+        # Verify summary contains all commands and costs
+        summary = tmp_cost_tracker.session_summary()
+        assert "12 operations" in summary
+
+        for cmd, cost in commands:
+            # Summary truncates commands at 80 chars, so check the first 80
+            truncated_cmd = cmd[:80]
+            assert truncated_cmd in summary, f"Command '{truncated_cmd}' not in summary"
+            assert cost in summary, f"Cost '{cost}' not in summary"
+
+    @pytest.mark.unit
+    def test_accumulation_preserves_timestamps_in_order(
+        self, tmp_cost_tracker: CostTracker
+    ) -> None:
+        """Timestamps in accumulated entries are monotonically non-decreasing."""
+        from datetime import datetime
+
+        import yaml
+
+        for i in range(6):
+            tmp_cost_tracker.track(f"aws s3api put-object --key file{i}.txt", f"${i}.00")
+
+        with tmp_cost_tracker.session_path.open() as f:
+            data = yaml.safe_load(f)
+
+        timestamps = [datetime.fromisoformat(entry["timestamp"]) for entry in data]
+        for i in range(len(timestamps) - 1):
+            assert timestamps[i] <= timestamps[i + 1], (
+                f"Timestamp at index {i} ({timestamps[i]}) is after "
+                f"timestamp at index {i + 1} ({timestamps[i + 1]})"
+            )

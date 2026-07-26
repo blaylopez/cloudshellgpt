@@ -63,7 +63,7 @@ csgpt config --set-language es
 $ aws s3api list-buckets --query 'Buckets[].{Name:Name,Created:CreationDate}' --output table
 
 # Ahora: solo describe lo que quieres
-$ csgpt "lista los buckets de S3 con su fecha de creación"
+$ csgpt ask "lista los buckets de S3 con su fecha de creación"
 
 # Output:
 # ⚡ CloudShellGPT v1.0.0 — AWS CLI that speaks your language
@@ -83,22 +83,22 @@ $ csgpt "lista los buckets de S3 con su fecha de creación"
 
 ### 1. En español, sin saber AWS CLI
 ```bash
-$ csgpt "muéstrame las lambdas que fallaron ayer"
+$ csgpt ask "muéstrame las lambdas que fallaron ayer"
 ```
 
 ### 2. En portugués, con filtro de costo
 ```bash
-$ csgpt "liste os buckets do S3 que ninguém usa há mais de 90 dias"
+$ csgpt ask "liste os buckets do S3 que ninguém usa há mais de 90 dias"
 ```
 
 ### 3. En inglés, comando complejo generado
 ```bash
-$ csgpt "create a t3.micro ec2 with a security group allowing SSH from my IP, and tag it as 'hackathon-demo'"
+$ csgpt ask "create a t3.micro ec2 with a security group allowing SSH from my IP, and tag it as 'hackathon-demo'"
 ```
 
 ### 4. Con predicción de costo
 ```bash
-$ csgpt "spin up a rds postgres db.t3.medium for 30 days" --cost-only
+$ csgpt ask "spin up a rds postgres db.t3.medium for 30 days" --cost-only
 # Output:
 # Estimated monthly cost: $58.32
 # Breakdown:
@@ -110,7 +110,7 @@ $ csgpt "spin up a rds postgres db.t3.medium for 30 days" --cost-only
 
 ### 5. Modo aprendizaje
 ```bash
-$ csgpt "create a lambda that responds with current time" --explain
+$ csgpt ask "create a lambda that responds with current time" --explain
 # Output:
 # ✓ Lambda created
 #
@@ -132,7 +132,7 @@ $ csgpt "create a lambda that responds with current time" --explain
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                      USER TERMINAL                            │
-│         $ csgpt "lista los buckets de S3"                     │
+│         $ csgpt ask "lista los buckets de S3"                 │
 └────────────────────┬─────────────────────────────────────────┘
                      │
                      ▼
@@ -253,6 +253,8 @@ Agrega esto a `.kiro/settings/mcp.json`:
 
 > **Importante:** CloudShellGPT NO necesita permisos adicionales sobre los servicios AWS que operas. Usa los que ya tienes en tu environment.
 
+Para documentación completa de permisos IAM, ver [docs/IAM_PERMISSIONS.md](docs/IAM_PERMISSIONS.md).
+
 ### Características de seguridad
 
 - ✅ **No exfiltra datos**: las llamadas a Bedrock usan solo el intent en lenguaje natural
@@ -268,12 +270,12 @@ Agrega esto a `.kiro/settings/mcp.json`:
 
 | Idioma | Calidad | Ejemplo |
 |---|---|---|
-| 🇪🇸 Español | ⭐⭐⭐⭐⭐ Nativo | `"lista los buckets de S3"` |
-| 🇺🇸 English | ⭐⭐⭐⭐⭐ Nativo | `"list the S3 buckets"` |
-| 🇧🇷 Português | ⭐⭐⭐⭐⭐ Nativo | `"liste os buckets do S3"` |
-| 🇫🇷 Français | ⭐⭐⭐⭐ Excelente | `"liste les buckets S3"` |
-| 🇩🇪 Deutsch | ⭐⭐⭐⭐ Excelente | `"liste die S3-Buckets"` |
-| 🇨🇳 中文 | ⭐⭐⭐⭐ Excelente | `"列出S3存储桶"` |
+| 🇪🇸 Español | ⭐⭐⭐⭐⭐ Nativo | `csgpt ask "lista los buckets de S3"` |
+| 🇺🇸 English | ⭐⭐⭐⭐⭐ Nativo | `csgpt ask "list the S3 buckets"` |
+| 🇧🇷 Português | ⭐⭐⭐⭐⭐ Nativo | `csgpt ask "liste os buckets do S3"` |
+| 🇫🇷 Français | ⭐⭐⭐⭐ Excelente | `csgpt ask "liste les buckets S3"` |
+| 🇩🇪 Deutsch | ⭐⭐⭐⭐ Excelente | `csgpt ask "liste die S3-Buckets"` |
+| 🇨🇳 中文 | ⭐⭐⭐⭐ Excelente | `csgpt ask "列出S3存储桶"` |
 
 ---
 

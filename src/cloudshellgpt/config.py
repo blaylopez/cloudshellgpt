@@ -112,6 +112,7 @@ class Config(BaseSettings):
         default=True, description="Show educational tips after execution"
     )
     max_cost_alert: int = Field(default=100, description="USD threshold for cost alert warnings")
+    timeout: int = Field(default=30, description="Command execution timeout in seconds")
 
     model_config = {
         "env_prefix": "CSGPT_",
@@ -136,6 +137,15 @@ class Config(BaseSettings):
         """Ensure max_cost_alert is a positive value."""
         if v < 0:
             msg = f"max_cost_alert must be >= 0, got {v}"
+            raise ValueError(msg)
+        return v
+
+    @field_validator("timeout")
+    @classmethod
+    def validate_timeout(cls, v: int) -> int:
+        """Ensure timeout is a positive value (> 0)."""
+        if v <= 0:
+            msg = f"timeout must be > 0, got {v}"
             raise ValueError(msg)
         return v
 
