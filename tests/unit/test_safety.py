@@ -728,10 +728,18 @@ class TestSafetyNeverDowngradesInvariant:
         """
         translation = _make_translation(command, risk_level=llm_risk)
         result = safety_layer.assess(translation)
-        assert RISK_ORDER[result.risk_level] >= RISK_ORDER[llm_risk], (
-            f"INVARIANT VIOLATED: LLM suggested '{llm_risk}' but assess() returned "
-            f"'{result.risk_level}' for command: {command}"
-        )
+
+        # Read-only commands are ALWAYS classified as low regardless of LLM suggestion.
+        # Use the same _is_read_only method that safety.py uses.
+        if safety_layer._is_read_only(command.lower()):
+            assert result.risk_level == "low", (
+                f"Read-only command should be 'low' but got '{result.risk_level}': {command}"
+            )
+        else:
+            assert RISK_ORDER[result.risk_level] >= RISK_ORDER[llm_risk], (
+                f"INVARIANT VIOLATED: LLM suggested '{llm_risk}' but assess() returned "
+                f"'{result.risk_level}' for command: {command}"
+            )
 
     @pytest.mark.unit
     @pytest.mark.invariant
@@ -997,25 +1005,24 @@ class TestUpgradeRiskLadderComprehensive:
         ("description", "command", "llm_risk", "expected_min_risk"),
         [
             # low→high: Commands where rules would say "low" (read-only verb)
-            # but contain a destructive pattern that _is_destructive catches.
-            # Example: "aws s3 ls" is low, but if we craft something that has
-            # "list" AND "delete" in arguments, rules may classify low but
-            # _is_destructive triggers upgrade.
+            # but contain a destructive pattern in arguments.
+            # NOTE: With read-only override, describe/list/get are ALWAYS low
+            # regardless of argument content. Only non-read-only commands upgrade.
             (
-                "low→high: list command referencing delete path",
-                "aws s3api list-objects --bucket delete-this-bucket",
+                "low→high: create command referencing delete path",
+                "aws s3api create-bucket --bucket delete-this-bucket",
                 "low",
                 "high",
             ),
             (
-                "low→high: describe with force in name",
-                "aws ec2 describe-instances --filters Name=tag:force,Values=true",
+                "low→high: put with force in name",
+                "aws s3api put-object --bucket force-deploy --key app.zip --body file://app.zip",
                 "low",
                 "high",
             ),
             (
-                "low→high: get command with destroy in key",
-                "aws s3api get-object --bucket logs --key destroy-report.csv /tmp/out",
+                "low→high: tag command with destroy in value",
+                "aws ec2 create-tags --resources i-123 --tags Key=Action,Value=destroy-after-review",
                 "low",
                 "high",
             ),
@@ -1192,20 +1199,20 @@ class TestUpgradeRiskLadderComprehensive:
         ("command", "llm_risk", "expected_min", "scenario"),
         [
             # LLM says low, rules say low (read-only with destructive word),
-            # _is_destructive triggers → upgrade low→high → final=high
+            # With read-only override, head-object is ALWAYS low regardless
             (
                 "aws s3api head-object --bucket delete-me-bucket --key test",
                 "low",
-                "high",
-                "LLM=low, rules=low (head/read-only), destructive 'delete' in bucket name → upgrade to high",
+                "low",
+                "LLM=low, rules=low (head/read-only), read-only override keeps it at low",
             ),
-            # LLM says medium, rules say low (read-only), no destructive →
-            # final = max(medium, low) = medium (no upgrade path triggered)
+            # LLM says medium, rules say low (read-only) →
+            # Read-only override forces low (describe is always safe)
             (
                 "aws ec2 describe-instances --region us-west-2",
                 "medium",
-                "medium",
-                "LLM=medium, rules=low, no destructive → final=medium (LLM floor)",
+                "low",
+                "LLM=medium, rules=low (read-only override) → final=low",
             ),
             # LLM says low, rules say critical (--skip-final-snapshot) →
             # final = max(low, critical) = critical, no upgrade needed
@@ -1224,12 +1231,12 @@ class TestUpgradeRiskLadderComprehensive:
                 "high",
                 "LLM=high, rules=medium, destructive → upgrade medium→high, final=high",
             ),
-            # LLM says critical, rules say low (list) → final=critical (LLM floor)
+            # LLM says critical, rules say low (list) → read-only override → final=low
             (
                 "aws s3 ls s3://sensitive-data/",
                 "critical",
-                "critical",
-                "LLM=critical overrides everything (LLM floor never violated)",
+                "low",
+                "LLM=critical, but ls is read-only → override to low",
             ),
         ],
         ids=[

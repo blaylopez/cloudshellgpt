@@ -369,17 +369,20 @@ class SafetyLayer:
         rule_risk = self._classify_risk_by_rules(translation.command)
 
         # --- Read-only override ---
-        # If rule-based classification determines the command is read-only (low),
-        # force low regardless of LLM assessment. A read-only command (list, describe,
-        # get, head, wait) can NEVER be destructive.
-        if rule_risk == "low" and self._is_read_only(translation.command.lower()):
+        # If the command is read-only (list, describe, get, head, wait, show, ls),
+        # force low regardless of LLM assessment or rule classification.
+        # A read-only command can NEVER be destructive.
+        if self._is_read_only(translation.command.lower()):
             risk_level: RiskLevel = "low"
         else:
             # --- Destructive pattern upgrade ---
             # If the command contains destructive patterns (broader than what
             # _classify_risk_by_rules may catch) and rule_risk hasn't already
             # escalated to "high" or above, apply the upgrade ladder.
-            if self._is_destructive(translation.command) and RISK_ORDER[rule_risk] < RISK_ORDER["high"]:
+            if (
+                self._is_destructive(translation.command)
+                and RISK_ORDER[rule_risk] < RISK_ORDER["high"]
+            ):
                 rule_risk = self._upgrade_risk(rule_risk)
 
             # Final risk = max of both assessments.

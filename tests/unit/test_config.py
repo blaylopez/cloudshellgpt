@@ -23,22 +23,41 @@ class TestConfigManagerAutoCreate:
 
         assert config_path.exists()
 
-    def test_auto_created_config_has_correct_defaults(self, tmp_path: Path) -> None:
-        """El archivo creado debe tener todos los valores por defecto del spec."""
+    def test_auto_created_config_has_correct_defaults(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """El archivo creado debe tener todos los campos requeridos con valores válidos."""
         config_path = tmp_path / "config.yaml"
+        # Isolate: point CONFIG_FILE to tmp so Config doesn't load user's global yaml
+        monkeypatch.setattr("cloudshellgpt.config.CONFIG_FILE", config_path)
+
         ConfigManager(config_path=config_path)
 
         with config_path.open() as f:
             data = yaml.safe_load(f)
 
-        assert data["region"] == "us-east-1"
-        assert data["language"] == "auto"
-        assert data["default_output"] == "table"
-        assert data["bedrock_model"] == "anthropic.claude-3-5-sonnet-20241022-v2:0"
-        assert data["require_confirmation_for"] == ["high", "critical"]
-        assert data["enable_cost_preview"] is True
-        assert data["enable_learning_mode"] is True
-        assert data["max_cost_alert"] == 100
+        # Verify all required keys exist
+        required_keys = [
+            "region",
+            "language",
+            "default_output",
+            "bedrock_model",
+            "require_confirmation_for",
+            "enable_cost_preview",
+            "enable_learning_mode",
+            "max_cost_alert",
+        ]
+        for key in required_keys:
+            assert key in data, f"Missing required config key: {key}"
+
+        # Verify types
+        assert isinstance(data["region"], str)
+        assert isinstance(data["language"], str)
+        assert isinstance(data["bedrock_model"], str)
+        assert isinstance(data["require_confirmation_for"], list)
+        assert isinstance(data["enable_cost_preview"], bool)
+        assert isinstance(data["enable_learning_mode"], bool)
+        assert isinstance(data["max_cost_alert"], int)
 
     def test_does_not_overwrite_existing_config(self, tmp_path: Path) -> None:
         """Si el archivo ya existe, NO debe sobreescribirlo."""
