@@ -73,6 +73,7 @@ def ask(
         from cloudshellgpt.cost import CostEstimator
         from cloudshellgpt.executor import AWSExecutor
         from cloudshellgpt.formatter import Formatter, FormatType
+        from cloudshellgpt.i18n import get_labels
         from cloudshellgpt.intent import IntentParser
         from cloudshellgpt.safety import SafetyLayer
 
@@ -84,9 +85,13 @@ def ask(
         parser = IntentParser()
         parsed = parser.parse(intent, region=region)
 
+        # Get UI labels based on detected language
+        ui_lang = parsed.detected_language if parsed.detected_language != "unknown" else cfg.language
+        labels = get_labels(ui_lang)
+
         if not parsed.confidence or parsed.confidence < 0.5:
-            console.print(f"[red]Could not understand:[/red] {intent}")
-            console.print(f"[yellow]Did you mean:[/yellow] {parsed.suggestion}")
+            console.print(f"[red]{labels['could_not_understand'].format(intent=intent)}[/red]")
+            console.print(f"[yellow]{labels['did_you_mean']}[/yellow]")
             raise typer.Exit(1)
 
         # 2. Translate to AWS CLI via Bedrock
@@ -140,21 +145,21 @@ def ask(
     # 6. Show what we're about to do
     console.print(
         Panel(
-            f"[bold]Command:[/bold]\n[cyan]{translation.command}[/cyan]\n\n"
-            f"[bold]Explanation:[/bold]\n{translation.explanation}\n\n"
-            f"[bold]Risk:[/bold] [{_risk_color(check.risk_level)}]{check.risk_level}[/{_risk_color(check.risk_level)}]\n"
-            f"[bold]Cost:[/bold] {check.estimated_cost}",
-            title="[bold]Plan[/bold]",
+            f"[bold]{labels['command_label']}:[/bold]\n[cyan]{translation.command}[/cyan]\n\n"
+            f"[bold]{labels['explanation_label']}:[/bold]\n{translation.explanation}\n\n"
+            f"[bold]{labels['risk_label']}:[/bold] [{_risk_color(check.risk_level)}]{check.risk_level}[/{_risk_color(check.risk_level)}]\n"
+            f"[bold]{labels['cost_label']}:[/bold] {check.estimated_cost}",
+            title=f"[bold]{labels['plan_title']}[/bold]",
             border_style="blue",
         )
     )
 
     # 6b. Flag explanations (learning mode)
     if cfg.enable_learning_mode:
-        _show_flag_explanations(translation.command)
+        _show_flag_explanations(translation.command, labels)
 
     # 7. Confirmation flow (varies by risk level)
-    _handle_confirmation(check, safety, translation, yes)
+    _handle_confirmation(check, safety, translation, yes, labels)
 
     # 8. Audit BEFORE execution (safety: record intent even if process crashes)
     audit = AuditLogger()
@@ -194,7 +199,7 @@ def ask(
             console.print(
                 Panel(
                     f"[dim]{tip}[/dim]",
-                    title="[bold green]💡 Tip[/bold green]",
+                    title=f"[bold green]{labels['tip_title']}[/bold green]",
                     border_style="green",
                     padding=(0, 1),
                 )
@@ -213,7 +218,7 @@ def ask(
                 console.print(
                     Panel(
                         "\n".join(lines),
-                        title="[bold magenta]🔗 Related commands[/bold magenta]",
+                        title=f"[bold magenta]{labels['related_title']}[/bold magenta]",
                         border_style="magenta",
                         padding=(0, 1),
                     )
@@ -232,7 +237,7 @@ def ask(
                 console.print(
                     Panel(
                         "\n".join(lines),
-                        title="[bold magenta]🔗 Related commands[/bold magenta]",
+                        title=f"[bold magenta]{labels['related_title']}[/bold magenta]",
                         border_style="magenta",
                         padding=(0, 1),
                     )
@@ -356,7 +361,7 @@ def main(
     """CloudShellGPT — AWS CLI that speaks your language."""
 
 
-def _show_flag_explanations(command: str) -> None:
+def _show_flag_explanations(command: str, labels: dict[str, str]) -> None:
     """Display flag explanations for the translated command.
 
     Shows a Rich panel with each recognized flag and its description,
@@ -364,6 +369,7 @@ def _show_flag_explanations(command: str) -> None:
 
     Args:
         command: The translated AWS CLI command containing flags to explain.
+        labels: UI labels dictionary for i18n.
     """
     from cloudshellgpt.learning import FlagExplainer
 
@@ -380,7 +386,7 @@ def _show_flag_explanations(command: str) -> None:
     console.print(
         Panel(
             "\n".join(lines),
-            title="[bold blue]🔍 Flags del comando[/bold blue]",
+            title=f"[bold blue]{labels['flags_title']}[/bold blue]",
             border_style="blue",
             padding=(0, 1),
         )
@@ -424,6 +430,7 @@ def _handle_confirmation(
     safety: SafetyLayer,
     translation: Translation,
     yes: bool,
+    labels: dict[str, str],
 ) -> None:
     """Handle confirmation flow based on risk level.
 
@@ -440,6 +447,7 @@ def _handle_confirmation(
         safety: The SafetyLayer instance (for inject_dry_run on critical).
         translation: The translation being confirmed.
         yes: Whether the --yes flag was passed.
+        labels: UI labels dictionary for i18n.
 
     Raises:
         typer.Exit: If the user cancels or fails confirmation.
@@ -456,59 +464,45 @@ def _handle_confirmation(
             return
         confirmed = typer.confirm(f"\n{check.confirmation_prompt}", default=False)
         if not confirmed:
-            console.print("[yellow]Cancelled.[/yellow]")
+            console.print(f"[yellow]{labels['cancelled']}[/yellow]")
             raise typer.Exit(0)
         return
 
     # high → show affected resources + cost, require typed confirmation
     if risk == "high":
-        _confirm_high_risk(check, translation)
+        _confirm_high_risk(check, translation, labels)
         return
 
     # critical → dry-run first, then "yes-i-understand"
     if risk == "critical":
-        _confirm_critical_risk(check, safety, translation)
+        _confirm_critical_risk(check, safety, translation, labels)
         return
 
 
-def _confirm_high_risk(check: SafetyCheck, translation: Translation) -> None:
-    """Handle high-risk confirmation: require typed resource name.
-
-    Shows affected resources and cost estimate, then asks the user to type
-    the resource name (or "confirm" if no specific resource is identified)
-    to proceed.
-
-    Args:
-        check: The SafetyCheck with resource and cost info.
-        translation: The translation being confirmed.
-
-    Raises:
-        typer.Exit: If the user types the wrong value.
-    """
-    # Display affected resources and cost
+def _confirm_high_risk(check: SafetyCheck, translation: Translation, labels: dict[str, str]) -> None:
+    """Handle high-risk confirmation: require typed resource name."""
     resources_display = ", ".join(check.affected_resources) if check.affected_resources else "N/A"
     console.print(
         Panel(
-            f"[bold red]⚠️  HIGH RISK OPERATION[/bold red]\n\n"
-            f"[bold]Command:[/bold] [cyan]{translation.command}[/cyan]\n"
-            f"[bold]Affected resources:[/bold] {resources_display}\n"
-            f"[bold]Estimated cost:[/bold] {check.estimated_cost}",
-            title="[bold red]Confirmation Required[/bold red]",
+            f"[bold red]{labels['confirm_high_banner']}[/bold red]\n\n"
+            f"[bold]{labels['command_label']}:[/bold] [cyan]{translation.command}[/cyan]\n"
+            f"[bold]{labels['affected_resources']}:[/bold] {resources_display}\n"
+            f"[bold]{labels['estimated_cost']}:[/bold] {check.estimated_cost}",
+            title=f"[bold red]{labels['confirm_high_title']}[/bold red]",
             border_style="red",
         )
     )
 
-    # Determine what the user must type to confirm
     if check.affected_resources:
         expected = check.affected_resources[0]
-        prompt_text = f'\nType the resource name ("{expected}") to confirm'
+        prompt_text = f'\n{labels["type_resource"].format(resource=expected)}'
     else:
         expected = "confirm"
-        prompt_text = '\nType "confirm" to proceed'
+        prompt_text = f'\n{labels["type_confirm"]}'
 
     user_input = typer.prompt(prompt_text)
     if user_input.strip() != expected:
-        console.print("[yellow]Confirmation did not match. Cancelled.[/yellow]")
+        console.print(f"[yellow]{labels['confirmation_mismatch']}[/yellow]")
         raise typer.Exit(0)
 
 
@@ -516,6 +510,7 @@ def _confirm_critical_risk(
     check: SafetyCheck,
     safety: SafetyLayer,
     translation: Translation,
+    labels: dict[str, str],
 ) -> None:
     """Handle critical-risk confirmation: dry-run first, then "yes-i-understand".
 
@@ -543,18 +538,18 @@ def _confirm_critical_risk(
     )
     console.print(
         Panel(
-            f"[bold red]🚨 CRITICAL OPERATION — IRREVERSIBLE[/bold red]\n\n"
-            f"[bold]Command:[/bold]\n  [cyan]{translation.command}[/cyan]\n\n"
-            f"[bold]Affected resources:[/bold]\n{resources_lines}\n\n"
-            f"[bold]Estimated cost:[/bold] {check.estimated_cost}\n\n"
-            "[dim]A dry-run will be performed first to validate the operation.[/dim]",
-            title="[bold red]⚠️  CRITICAL WARNING[/bold red]",
+            f"[bold red]{labels['confirm_critical_banner']}[/bold red]\n\n"
+            f"[bold]{labels['command_label']}:[/bold]\n  [cyan]{translation.command}[/cyan]\n\n"
+            f"[bold]{labels['affected_resources']}:[/bold]\n{resources_lines}\n\n"
+            f"[bold]{labels['estimated_cost']}:[/bold] {check.estimated_cost}\n\n"
+            f"[dim]{labels['dry_run_performing']}[/dim]",
+            title=f"[bold red]{labels['confirm_critical_title']}[/bold red]",
             border_style="bold red",
         )
     )
 
     # 2. Automatic dry-run
-    console.print("\n[bold]Performing dry-run...[/bold]")
+    console.print(f"\n[bold]{labels['dry_run_performing']}[/bold]")
     dry_run_result = safety.inject_dry_run(translation.command)
 
     if dry_run_result.preview_only:
@@ -563,7 +558,7 @@ def _confirm_critical_risk(
             Panel(
                 f"[dim]{dry_run_result.dry_run_notes}[/dim]\n\n"
                 f"[cyan]{dry_run_result.command}[/cyan]",
-                title="[bold]Dry-Run Preview[/bold]",
+                title=f"[bold]{labels['dry_run_preview']}[/bold]",
                 border_style="yellow",
             )
         )
@@ -582,9 +577,9 @@ def _confirm_critical_risk(
         if dry_run_success:
             console.print(
                 Panel(
-                    f"[green]Dry-run successful — operation would succeed[/green]\n\n"
+                    f"[green]{labels['dry_run_success']}[/green]\n\n"
                     f"[dim]{dry_run_result.dry_run_notes}[/dim]",
-                    title="[bold]Dry-Run Result[/bold]",
+                    title=f"[bold]{labels['dry_run_result']}[/bold]",
                     border_style="green",
                 )
             )
@@ -593,20 +588,20 @@ def _confirm_critical_risk(
                 Panel(
                     f"[red]Dry-run returned errors:[/red]\n\n"
                     f"{dr_exec_result.stderr or dr_exec_result.stdout or '(no output)'}",
-                    title="[bold red]Dry-Run Failed[/bold red]",
+                    title=f"[bold red]{labels['dry_run_failed']}[/bold red]",
                     border_style="red",
                 )
             )
-            console.print("[yellow]Dry-run failed. Aborting.[/yellow]")
+            console.print(f"[yellow]{labels['dry_run_failed']}[/yellow]")
             raise typer.Exit(1)
 
     # 3. Require typed confirmation
     console.print(
-        "\n[bold]To proceed with this critical operation, type [red]yes-i-understand[/red]:[/bold]"
+        f"\n[bold]{labels['type_yes_i_understand']}[/bold]"
     )
     user_input = typer.prompt("Confirm")
     if user_input.strip() != "yes-i-understand":
-        console.print("[yellow]Confirmation did not match. Cancelled.[/yellow]")
+        console.print(f"[yellow]{labels['confirmation_mismatch']}[/yellow]")
         raise typer.Exit(0)
 
 
