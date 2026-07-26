@@ -22,7 +22,7 @@ IntentParser (intent.py)
     │
     ▼
 BedrockTranslator (bedrock_translator.py)
-    → Sends Intent to Claude 3.5 Sonnet
+    → Sends Intent to Claude Sonnet 4.6 via inference profile
     → Returns Translation (command + metadata)
     │
     ▼
@@ -50,6 +50,10 @@ Formatter (formatter.py)
     ▼
 AuditLogger (audit.py)
     → Logs everything to ~/.csgpt/audit.log
+
+I18n (i18n.py)
+    → Localizes UI labels (ES, EN, PT, ZH, FR)
+    → Tips and related commands from LLM in user's language
 
 LearningMode (learning.py) [optional, parallel]
     → Provides educational tips after execution
@@ -83,7 +87,7 @@ User config at `~/.csgpt/config.yaml`:
 - `region` (default: us-east-1)
 - `language` (default: auto)
 - `default_output` (default: table)
-- `bedrock_model` (default: Claude 3.5 Sonnet)
+- `bedrock_model` (default: `us.anthropic.claude-sonnet-4-6` — configurable in `~/.csgpt/config.yaml` without code changes)
 - `require_confirmation_for` (default: [high, critical])
 - `enable_cost_preview` (default: true)
 - `enable_learning_mode` (default: true)

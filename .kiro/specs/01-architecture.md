@@ -12,7 +12,7 @@ IntentParser (src/cloudshellgpt/intent.py)
     │
     ▼
 BedrockTranslator (src/cloudshellgpt/bedrock_translator.py)
-    → Envía Intent a Claude 3.5 Sonnet via Converse API
+    → Envía Intent a Claude Sonnet 4.6 via Converse API
     → Returns Translation (command + metadata)
     │
     ▼
@@ -86,7 +86,7 @@ MCP Server (src/cloudshellgpt/mcp_server.py) [modo alternativo]
 
 | Servicio | Propósito | Región |
 |----------|-----------|--------|
-| Amazon Bedrock | Traducción intent → CLI (Converse API) | us-east-1 |
+| Amazon Bedrock | Traducción intent → CLI (Converse API, Claude Sonnet 4.6) | us-east-1 |
 | AWS Cost Explorer | Predicción/estimación de costos | us-east-1 |
 | Amazon Comprehend | Detección de PII en outputs (opt-in) | us-east-1 |
 
@@ -103,7 +103,7 @@ MCP Server (src/cloudshellgpt/mcp_server.py) [modo alternativo]
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream"
       ],
-      "Resource": "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      "Resource": "arn:aws:bedrock:us-east-1:*:inference-profile/us.anthropic.claude-sonnet-4-6"
     },
     {
       "Sid": "CostExplorer",
@@ -162,12 +162,13 @@ class Intent(BaseModel):
 Convierte Intent → AWS CLI command via Amazon Bedrock.
 
 **Reglas de configuración (aws-conventions steering):**
-- Model ID: `anthropic.claude-3-5-sonnet-20241022-v2:0`
+- Model ID: `us.anthropic.claude-sonnet-4-6` (inference profile)
 - API: Siempre Converse API (`client.converse()`), nunca `invoke_model`
 - SDK: `boto3.client("bedrock-runtime", region_name=self.region)` — siempre region explícita
 - Temperature por caso de uso:
   - 0.2 → translation (precisión máxima)
   - 0.3 → explanation (más creativo)
+- topP: NO se usa (incompatible con este modelo)
 - Max tokens por tipo de intención:
   - `translation` (NL → AWS CLI): 2048
   - `explanation`: 1024
@@ -285,7 +286,7 @@ Configuración en `~/.csgpt/config.yaml`. Usa Pydantic Settings para validación
 region: us-east-1          # default Bedrock region
 language: auto             # auto-detect con langdetect
 default_output: table      # table|json|yaml|csv
-bedrock_model: anthropic.claude-3-5-sonnet-20241022-v2:0
+bedrock_model: us.anthropic.claude-sonnet-4-6
 require_confirmation_for: [high, critical]
 enable_cost_preview: true
 enable_learning_mode: true
@@ -390,7 +391,7 @@ USER: csgpt "lista los buckets de S3 que nadie ha tocado en 6 meses"
 - **Credentials:** Solo usa AWS credentials del environment — nunca gestiona propias
 - **Least privilege:** Documenta IAM permissions necesarias vs permisos del usuario
 - **Shell injection:** Rechaza todos los metacharacters — solo `aws ...` puro
-- **LLM distrust:** Safety Layer siempre verifica independientemente, puede upgradar risk, nunca downgradar
+- **LLM distrust:** Safety Layer siempre verifica independientemente, puede upgradar risk, nunca downgradar (excepto read-only commands sin patrones destructivos)
 - **Audit first:** Log ANTES de ejecutar — registro incluso si el comando crashea
 - **PII protection:** Comprehend detection opt-in, redacta antes de mostrar, nunca loguea PII
 - **MCP stateless:** Sin state entre calls, cada request es independiente

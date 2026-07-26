@@ -29,7 +29,7 @@ Convertir lenguaje natural (en cualquier idioma) en operaciones de AWS correctas
 Un agente CLI (compatible con bash/zsh/fish) que:
 
 - **Entiende** intención en lenguaje natural (ES, EN, PT, ZH, FR, DE) usando `langdetect`
-- **Traduce** a AWS CLI via Amazon Bedrock (`anthropic.claude-3-5-sonnet-20241022-v2:0`, Converse API)
+- **Traduce** a AWS CLI via Amazon Bedrock (`us.anthropic.claude-sonnet-4-6`, Converse API)
 - **Ejecuta** con sandboxing estricto: solo comandos `aws`, sin shell metacharacters, con timeout configurable
 - **Clasifica riesgo** en 4 niveles (low/medium/high/critical) con confirmaciones inteligentes
 - **Predice costos** antes de ejecutar via AWS Cost Explorer
@@ -84,7 +84,7 @@ User config en `~/.csgpt/config.yaml`:
 region: us-east-1
 language: auto
 default_output: table
-bedrock_model: anthropic.claude-3-5-sonnet-20241022-v2:0
+bedrock_model: us.anthropic.claude-sonnet-4-6
 require_confirmation_for: [high, critical]
 enable_cost_preview: true
 enable_learning_mode: true

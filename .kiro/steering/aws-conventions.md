@@ -2,9 +2,10 @@
 
 ## Bedrock Usage
 
-- Model: `anthropic.claude-3-5-sonnet-20241022-v2:0`
+- Model: `us.anthropic.claude-sonnet-4-6` (inference profile ID)
 - API: Always use the Converse API (`client.converse()`), never the legacy `invoke_model`
 - Temperature: 0.2 for translation (precision), 0.3 for explanations (more creative)
+- Note: topP is NOT used (incompatible with this model). Only temperature controls sampling.
 - Max tokens por tipo de intención:
   - translation (NL → AWS CLI): 2048
   - explanation: 1024
@@ -13,6 +14,8 @@
   - Default para intenciones nuevas: 4096
 - System prompts: defined as class constants, never hardcoded inline
 - Always handle `BedrockError` gracefully with user-facing message
+- The model is configurable via `~/.csgpt/config.yaml` (`bedrock_model` key) without code changes
+- Newer models require inference profile IDs (prefix `us.`) rather than direct model ARNs
 
 ## IAM & Credentials
 
@@ -61,7 +64,7 @@ client = boto3.client("bedrock-runtime")
 
 ## Cost Awareness
 
-- Bedrock Claude 3.5 Sonnet: ~$0.003/1K input tokens, ~$0.015/1K output tokens
+- Bedrock Claude Sonnet 4.6: ~$0.003/1K input tokens, ~$0.015/1K output tokens
 - Average request cost: ~$0.01-0.02
 - Track costs in session via CostTracker
 - Warn user if estimated cost of the resource being created > $100/month
