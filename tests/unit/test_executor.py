@@ -841,46 +841,61 @@ METACHAR_POSITION_CASES: list[tuple[str, str]] = [
     ("aws s3 cp file.txt s3://bucket/`date`", "backtick"),
     # -----------------------------------------------------------------------
     # 4. Dentro de argumentos (embebido en valores de flags/parámetros)
+    #    NOTA: Solo los metacharacters que están FUERA de comillas se rechazan.
+    #    Los que están DENTRO de comillas (single o double) son valores de
+    #    argumento legítimos y se permiten (PR #19: quote-stripping).
     # -----------------------------------------------------------------------
-    # $() dentro de un path S3
+    # $() dentro de un path S3 — FUERA de comillas, se rechaza
     ("aws s3 cp s3://$(whoami)/file .", "command substitution"),
-    # ${} dentro de un valor de tag
+    # ${} dentro de un valor de tag — FUERA de comillas, se rechaza
     ("aws ec2 create-tags --tags Key=Owner,Value=${USER}", "variable"),
-    # Backtick dentro de un nombre de archivo
+    # Backtick dentro de un nombre de archivo — FUERA de comillas, se rechaza
     ("aws s3 cp `pwd`/local.txt s3://bucket/", "backtick"),
-    # Pipe dentro de un argumento --query
-    ("aws ec2 describe-instances --query 'Reservations[*]|sort_by(@,&Name)'", "pipe"),
-    # Semicolon dentro de un valor
-    ("aws ssm put-parameter --value 'pass;word123'", "separator"),
-    # $() anidado en un argumento --payload
-    ('aws lambda invoke --payload \'{"key": "$(cat secret)"}\' out.json', "command substitution"),
-    # -----------------------------------------------------------------------
-    # 5. Entre comillas simples vs dobles (metacharacters embebidos en strings)
-    # -----------------------------------------------------------------------
+]
+
+# ---------------------------------------------------------------------------
+# Metacharacters dentro de comillas — PERMITIDOS después de PR #19
+# (el executor hace quote-stripping antes de escanear metacharacters)
+# ---------------------------------------------------------------------------
+
+# Casos donde el metacaracter está SOLO dentro de comillas (single o double).
+# Estos NO deben ser rechazados — son valores de argumento legítimos.
+QUOTED_METACHAR_ALLOWED_CASES: list[tuple[str, str]] = [
+    # Pipe dentro de un argumento --query (single quotes)
+    ("aws ec2 describe-instances --query 'Reservations[*]|sort_by(@,&Name)'", "arg_pipe_in_query"),
+    # Semicolon dentro de un valor (single quotes)
+    ("aws ssm put-parameter --value 'pass;word123'", "arg_semicolon_in_value"),
+    # $() anidado en un argumento --payload (single quotes)
+    (
+        'aws lambda invoke --payload \'{"key": "$(cat secret)"}\' out.json',
+        "arg_dollar_paren_nested_payload",
+    ),
     # Backtick dentro de comillas dobles
-    ('aws s3 cp "file-`date`.txt" s3://bucket/', "backtick"),
+    ('aws s3 cp "file-`date`.txt" s3://bucket/', "quotes_double_backtick"),
     # $() dentro de comillas dobles
-    ('aws s3 cp "$(whoami)-report.csv" s3://bucket/', "command substitution"),
+    ('aws s3 cp "$(whoami)-report.csv" s3://bucket/', "quotes_double_dollar_paren"),
     # $VAR dentro de comillas dobles
-    ('aws s3 cp "$HOME/secret.txt" s3://bucket/', "variable"),
-    # Pipe dentro de comillas simples (igualmente rechazado — regex no distingue quoting)
-    ("aws s3 cp 'file | name.txt' s3://bucket/", "pipe"),
+    ('aws s3 cp "$HOME/secret.txt" s3://bucket/', "quotes_double_dollar_var"),
+    # Pipe dentro de comillas simples
+    ("aws s3 cp 'file | name.txt' s3://bucket/", "quotes_single_pipe"),
     # Semicolon dentro de comillas simples
-    ("aws ssm put-parameter --name '/app/config' --value 'host;port'", "separator"),
+    ("aws ssm put-parameter --name '/app/config' --value 'host;port'", "quotes_single_semicolon"),
     # ${} dentro de comillas dobles
-    ('aws logs filter-log-events --filter-pattern "${PATTERN}"', "variable"),
+    ('aws logs filter-log-events --filter-pattern "${PATTERN}"', "quotes_double_dollar_brace"),
 ]
 
 
 class TestMetacharPositionVaried:
     """Tests parametrizados que verifican rechazo de metacharacters según su POSICIÓN.
 
-    Cubre 5 categorías de posición:
+    Cubre 4 categorías de posición:
     1. Al inicio del comando (antes de 'aws')
     2. En el medio (entre subcomandos y argumentos)
     3. Al final del comando
-    4. Dentro de argumentos (embebido en valores de flags)
-    5. Entre comillas simples y dobles
+    4. Dentro de argumentos FUERA de comillas (embebido en valores sin quoting)
+
+    NOTA: Los metacharacters dentro de comillas (single o double) se prueban
+    aparte en TestQuotedMetacharsAllowed — ahora son PERMITIDOS (PR #19).
     """
 
     @pytest.mark.parametrize(
@@ -908,20 +923,10 @@ class TestMetacharPositionVaried:
             "end_output_redirect",
             "end_append_redirect",
             "end_backtick",
-            # 4. Dentro de argumentos
+            # 4. Dentro de argumentos (fuera de comillas)
             "arg_dollar_paren_s3_path",
             "arg_dollar_brace_tag_value",
             "arg_backtick_pwd",
-            "arg_pipe_in_query",
-            "arg_semicolon_in_value",
-            "arg_dollar_paren_nested_payload",
-            # 5. Entre comillas
-            "quotes_double_backtick",
-            "quotes_double_dollar_paren",
-            "quotes_double_dollar_var",
-            "quotes_single_pipe",
-            "quotes_single_semicolon",
-            "quotes_double_dollar_brace",
         ],
     )
     def test_rejects_metachar_regardless_of_position(
@@ -940,6 +945,43 @@ class TestMetacharPositionVaried:
         assert result.error is not None, f"Se esperaba un mensaje de error para: {command!r}"
         assert expected_error_substring in result.error.lower(), (
             f"Se esperaba '{expected_error_substring}' en el error, pero fue: {result.error!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Tests: Metacharacters dentro de comillas — PERMITIDOS (PR #19)
+# ---------------------------------------------------------------------------
+
+
+class TestQuotedMetacharsAllowed:
+    """Tests que verifican que metacharacters DENTRO de comillas son PERMITIDOS.
+
+    Después de PR #19, el executor hace quote-stripping antes de escanear
+    metacharacters. Esto significa que caracteres como |, ;, $(), ``, ${}
+    dentro de comillas simples o dobles son valores de argumento legítimos
+    (ej: JMESPath queries con |, passwords con ;, filter patterns con ${}).
+    """
+
+    @pytest.mark.parametrize(
+        ("command", "description"),
+        QUOTED_METACHAR_ALLOWED_CASES,
+        ids=[case[1] for case in QUOTED_METACHAR_ALLOWED_CASES],
+    )
+    def test_quoted_metachar_not_rejected(
+        self,
+        executor: AWSExecutor,
+        command: str,
+        description: str,
+    ) -> None:
+        """Verifica que metacharacters dentro de comillas NO son rechazados."""
+        result = executor.run(command)
+
+        # Should NOT be rejected for security reasons
+        assert result.exit_code != 1 or (
+            result.error is not None and "Security" not in result.error
+        ), (
+            f"Comando con metacaracter en comillas fue rechazado incorrectamente: "
+            f"{command!r} — error: {result.error!r}"
         )
 
 

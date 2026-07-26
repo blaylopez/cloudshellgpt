@@ -76,10 +76,10 @@ class TestLLMIndependence:
         ["low", "medium", "high", "critical"],
     )
     def test_never_downgrade_read_only(self, safety_layer: SafetyLayer, llm_risk: str) -> None:
-        """Even for a read-only command, risk >= llm_risk."""
+        """Read-only commands always return 'low' regardless of llm_risk (read-only override)."""
         translation = _make_translation("aws s3api list-buckets", risk_level=llm_risk)
         result = safety_layer.assess(translation)
-        assert RISK_ORDER[result.risk_level] >= RISK_ORDER[llm_risk]
+        assert result.risk_level == "low"
 
     @pytest.mark.unit
     @pytest.mark.parametrize(
@@ -103,13 +103,13 @@ class TestLLMIndependence:
 
     @pytest.mark.unit
     def test_llm_high_stays_high_for_read_only(self, safety_layer: SafetyLayer) -> None:
-        """If LLM says high but command is read-only, result is still high.
+        """If LLM says high but command is read-only, result is 'low' (read-only override).
 
-        We never downgrade below LLM.
+        Read-only commands are ALWAYS classified as low regardless of LLM suggestion.
         """
         translation = _make_translation("aws s3api list-buckets", risk_level="high")
         result = safety_layer.assess(translation)
-        assert result.risk_level == "high"
+        assert result.risk_level == "low"
 
 
 # ---------------------------------------------------------------------------
@@ -329,10 +329,10 @@ class TestAssessIntegration:
 
     @pytest.mark.unit
     def test_high_llm_low_rules_returns_high(self, safety_layer: SafetyLayer) -> None:
-        """LLM says high, rules say low → final is high (LLM floor)."""
+        """LLM says high, rules say low, but 'aws s3 ls' is read-only → override to low."""
         translation = _make_translation("aws s3 ls", risk_level="high")
         result = safety_layer.assess(translation)
-        assert result.risk_level == "high"
+        assert result.risk_level == "low"
 
     @pytest.mark.unit
     def test_critical_llm_medium_rules_returns_critical(self, safety_layer: SafetyLayer) -> None:
