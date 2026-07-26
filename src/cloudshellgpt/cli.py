@@ -183,10 +183,13 @@ def ask(
 
     # 12. Post-execution educational tip
     if result.exit_code == 0 and cfg.enable_learning_mode:
-        from cloudshellgpt.learning import PostExecutionTips
+        # Prefer LLM-generated tip (localized) over static dictionary
+        tip = translation.tip
+        if not tip:
+            from cloudshellgpt.learning import PostExecutionTips
 
-        tips = PostExecutionTips()
-        tip = tips.get_tip(translation.command)
+            tips = PostExecutionTips()
+            tip = tips.get_tip(translation.command)
         if tip:
             console.print(
                 Panel(
@@ -199,22 +202,41 @@ def ask(
 
     # 13. Related command suggestions (learning mode)
     if result.exit_code == 0 and cfg.enable_learning_mode:
-        from cloudshellgpt.learning import RelatedCommands
-
-        related = RelatedCommands()
-        suggestions = related.suggest(translation.command)
-        if suggestions:
+        # Prefer LLM-generated related commands (localized) over static dictionary
+        if translation.related_commands:
             lines: list[str] = []
-            for suggestion in suggestions:
-                lines.append(f"  [cyan]{suggestion.command}[/cyan]  {suggestion.description}")
-            console.print(
-                Panel(
-                    "\n".join(lines),
-                    title="[bold magenta]🔗 Related commands[/bold magenta]",
-                    border_style="magenta",
-                    padding=(0, 1),
+            for rc in translation.related_commands:
+                cmd = rc.get("command", "")
+                desc = rc.get("description", "")
+                lines.append(f"  [cyan]{cmd}[/cyan]  {desc}")
+            if lines:
+                console.print(
+                    Panel(
+                        "\n".join(lines),
+                        title="[bold magenta]🔗 Related commands[/bold magenta]",
+                        border_style="magenta",
+                        padding=(0, 1),
+                    )
                 )
-            )
+        else:
+            from cloudshellgpt.learning import RelatedCommands
+
+            related = RelatedCommands()
+            suggestions = related.suggest(translation.command)
+            if suggestions:
+                lines = []
+                for suggestion in suggestions:
+                    lines.append(
+                        f"  [cyan]{suggestion.command}[/cyan]  {suggestion.description}"
+                    )
+                console.print(
+                    Panel(
+                        "\n".join(lines),
+                        title="[bold magenta]🔗 Related commands[/bold magenta]",
+                        border_style="magenta",
+                        padding=(0, 1),
+                    )
+                )
 
     if explain:
         console.print(
