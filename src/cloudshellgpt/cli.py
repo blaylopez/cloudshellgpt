@@ -548,12 +548,19 @@ def _confirm_critical_risk(
         # Execute the dry-run command
         executor = AWSExecutor(dry_run=False, timeout=30)
         dr_exec_result = executor.run(dry_run_result.command)
-        if dr_exec_result.exit_code == 0:
+
+        # AWS dry-run returns non-zero exit code with "DryRunOperation" error
+        # when the operation WOULD have succeeded. This is a success signal.
+        dry_run_success = (
+            dr_exec_result.exit_code == 0
+            or "DryRunOperation" in (dr_exec_result.stderr or "")
+        )
+
+        if dry_run_success:
             console.print(
                 Panel(
-                    f"[green]Dry-run successful[/green]\n\n"
-                    f"[dim]{dry_run_result.dry_run_notes}[/dim]\n\n"
-                    f"{dr_exec_result.stdout or '(no output)'}",
+                    f"[green]Dry-run successful — operation would succeed[/green]\n\n"
+                    f"[dim]{dry_run_result.dry_run_notes}[/dim]",
                     title="[bold]Dry-Run Result[/bold]",
                     border_style="green",
                 )
