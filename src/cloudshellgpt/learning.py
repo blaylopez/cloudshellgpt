@@ -427,7 +427,7 @@ class TutorialRunner:
 class Explainer:
     """Explains what AWS CLI commands do in detail."""
 
-    MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    MODEL_ID = "anthropic.claude-sonnet-4-20250514-v1:0"
     REGION = "us-east-1"
 
     EXPLAIN_SYSTEM_PROMPT = (

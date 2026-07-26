@@ -95,7 +95,7 @@ class Config(BaseSettings):
         default="table", description="Output format: table, json, yaml, csv"
     )
     bedrock_model: str = Field(
-        default="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        default="anthropic.claude-sonnet-4-20250514-v1:0",
         description="Bedrock model ID for translations",
     )
     require_confirmation_for: list[str] = Field(
