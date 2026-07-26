@@ -71,7 +71,7 @@ Esta política es el **mínimo absoluto** para que CloudShellGPT funcione. Permi
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6"
     }
   ]
 }
@@ -81,7 +81,7 @@ Esta política es el **mínimo absoluto** para que CloudShellGPT funcione. Permi
 
 | Acción | Propósito |
 |--------|-----------|
-| `bedrock:InvokeModel` | Enviar prompts a Claude 3.5 Sonnet para traducir intenciones |
+| `bedrock:InvokeModel` | Enviar prompts a Claude Sonnet 4.6 para traducir intenciones |
 | `bedrock:InvokeModelWithResponseStream` | Respuestas en streaming (mejor UX con respuestas progresivas) |
 
 ### Limitaciones con solo esta política
@@ -109,7 +109,7 @@ Esta política habilita **todas las funcionalidades principales** de CloudShellG
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6"
     },
     {
       "Sid": "CloudShellGPTCostExplorer",
@@ -180,7 +180,7 @@ Esta política incluye **todos los permisos** que CloudShellGPT puede necesitar:
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6"
     },
     {
       "Sid": "CloudShellGPTCostExplorer",
@@ -219,28 +219,28 @@ Si CloudShellGPT solo se usará en una región específica, se puede restringir 
     "bedrock:InvokeModel",
     "bedrock:InvokeModelWithResponseStream"
   ],
-  "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+  "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6"
 }
 ```
 
 Para otra región (ej. `eu-west-1`):
 
 ```json
-"Resource": "arn:aws:bedrock:eu-west-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+"Resource": "arn:aws:bedrock:eu-west-1::foundation-model/us.anthropic.claude-sonnet-4-6"
 ```
 
 Para múltiples regiones:
 
 ```json
 "Resource": [
-  "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
-  "arn:aws:bedrock:eu-west-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+  "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6",
+  "arn:aws:bedrock:eu-west-1::foundation-model/us.anthropic.claude-sonnet-4-6"
 ]
 ```
 
 ### Restringir por modelo específico
 
-El ARN ya está restringido al modelo `anthropic.claude-3-5-sonnet-20241022-v2:0`. Si en el futuro se quiere permitir otros modelos de Bedrock:
+El ARN ya está restringido al modelo `us.anthropic.claude-sonnet-4-6`. Si en el futuro se quiere permitir otros modelos de Bedrock:
 
 ```json
 "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.*"
@@ -260,7 +260,7 @@ Se puede añadir una condición para restringir por IP de origen o por hora:
     "bedrock:InvokeModel",
     "bedrock:InvokeModelWithResponseStream"
   ],
-  "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+  "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6",
   "Condition": {
     "IpAddress": {
       "aws:SourceIp": "203.0.113.0/24"
@@ -299,7 +299,7 @@ cat > /tmp/cloudshellgpt-policy.json << 'EOF'
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6"
     },
     {
       "Sid": "CloudShellGPTCostExplorer",
@@ -365,11 +365,11 @@ aws sso-admin put-inline-policy-to-permission-set \
 
 ### Habilitar el modelo en Bedrock
 
-Antes de usar CloudShellGPT, debes habilitar el acceso al modelo Claude 3.5 Sonnet en tu cuenta:
+Antes de usar CloudShellGPT, debes habilitar el acceso al modelo Claude Sonnet 4.6 en tu cuenta:
 
 1. Abre la [consola de Bedrock](https://console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess)
 2. Click en **Manage model access**
-3. Selecciona **Anthropic** → **Claude 3.5 Sonnet v2**
+3. Selecciona **Anthropic** → **Claude Sonnet 4.6**
 4. Click **Save changes**
 
 > **Nota:** La habilitación del modelo es un paso único por cuenta/región. No tiene costo — solo pagas por las invocaciones.
@@ -420,11 +420,11 @@ when calling the GetCostAndUsage operation
 botocore.exceptions.ClientError: An error occurred (ModelNotReadyException)
 ```
 
-**Causa:** El modelo Claude 3.5 Sonnet no está habilitado en tu cuenta/región.
+**Causa:** El modelo Claude Sonnet 4.6 no está habilitado en tu cuenta/región.
 
 **Solución:**
 1. Ve a la [consola de Bedrock Model Access](https://console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess)
-2. Habilita Claude 3.5 Sonnet v2 de Anthropic
+2. Habilita Claude Sonnet 4.6 de Anthropic
 3. Espera unos minutos a que se active
 
 ### Error: `ExpiredTokenException`
@@ -457,7 +457,7 @@ aws sts get-session-token --serial-number arn:aws:iam::123456789012:mfa/user --t
 ```bash
 # Test rápido de permisos
 aws bedrock-runtime invoke-model \
-  --model-id anthropic.claude-3-5-sonnet-20241022-v2:0 \
+  --model-id us.anthropic.claude-sonnet-4-6 \
   --region us-east-1 \
   --content-type application/json \
   --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":10,"messages":[{"role":"user","content":"hi"}]}' \
@@ -524,7 +524,7 @@ Agrega condiciones para limitar desde dónde se puede invocar:
 "Resource": "*"
 
 // ✅ Bien — específico al modelo
-"Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+"Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-sonnet-4-6"
 ```
 
 > **Nota:** `ce:*` y `comprehend:DetectPiiEntities` requieren `Resource: "*"` por diseño de AWS — no es posible restringirlos a un ARN específico.

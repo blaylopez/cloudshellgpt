@@ -9,7 +9,7 @@
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io)
 [![Kiro Compatible](https://img.shields.io/badge/Kiro-Ready-purple.svg)](https://kiro.dev)
 
-CloudShellGPT convierte tus intenciones en lenguaje natural (en **cualquier idioma**) en comandos AWS CLI correctos, seguros y con predicción de costos. Construido con [Amazon Bedrock](https://aws.amazon.com/bedrock/) (Claude 3.5 Sonnet) y compatible con [Kiro](https://kiro.dev) como MCP server.
+CloudShellGPT convierte tus intenciones en lenguaje natural (en **cualquier idioma**) en comandos AWS CLI correctos, seguros y con predicción de costos. Construido con [Amazon Bedrock](https://aws.amazon.com/bedrock/) (Claude Sonnet 4.6) y compatible con [Kiro](https://kiro.dev) como MCP server.
 
 > 🏆 Built for **HACKATHONKIRO** — Category: *Agentes especializados & Productividad para developers*
 
@@ -48,7 +48,7 @@ pipx install cloudshellgpt
 # 1. Asegúrate de tener credenciales AWS
 aws configure
 
-# 2. Habilita el modelo Claude 3.5 en Bedrock (one-click)
+# 2. Habilita el modelo Claude Sonnet 4.6 en Bedrock (one-click)
 # https://console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess
 
 # 3. (Opcional) Configura defaults
@@ -148,8 +148,8 @@ $ csgpt ask "create a lambda that responds with current time" --explain
 │  Intent  │  │ Bedrock  │  │  Safety  │
 │  Parser  │→ │Translator│→ │  Layer   │
 └──────────┘  └──────────┘  └──────────┘
-                Claude 3.5      Cost Explorer
-                Sonnet
+                Claude Sonnet   Cost Explorer
+                4.6
                      │
                      ▼
             ┌────────────────┐
@@ -170,7 +170,7 @@ $ csgpt ask "create a lambda that responds with current time" --explain
 | Componente | Responsabilidad | Tecnología |
 |---|---|---|
 | Intent Parser | Convierte lenguaje natural en Intent estructurado | Python + Pydantic + langdetect |
-| Bedrock Translator | Traduce Intent → AWS CLI command | Amazon Bedrock + Claude 3.5 Sonnet |
+| Bedrock Translator | Traduce Intent → AWS CLI command | Amazon Bedrock + Claude Sonnet 4.6 |
 | Safety Layer | Evalúa riesgo + predice costo | AWS Cost Explorer + reglas |
 | Executor | Ejecuta comandos con sandboxing | subprocess + boto3 |
 | Formatter | Renderiza output (table, json, yaml, csv) | Rich |
@@ -239,7 +239,7 @@ Agrega esto a `.kiro/settings/mcp.json`:
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream"
       ],
-      "Resource": "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      "Resource": "arn:aws:bedrock:*::foundation-model/us.anthropic.claude-sonnet-4-6"
     },
     {
       "Sid": "CostExplorer",
@@ -313,7 +313,7 @@ Apache 2.0 — ver [LICENSE](LICENSE).
 ## 🙏 Agradecimientos
 
 - Amazon Web Services por [Bedrock](https://aws.amazon.com/bedrock/)
-- Anthropic por [Claude 3.5 Sonnet](https://www.anthropic.com)
+- Anthropic por [Claude Sonnet 4.6](https://www.anthropic.com)
 - Los organizadores de **HACKATHONKIRO**
 - La comunidad open source
 
