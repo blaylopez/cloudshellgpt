@@ -328,6 +328,11 @@ def config(
         console.print(f"[green]Config file created with defaults at {cfg.config_path}[/green]")
     elif show:
         console.print(Panel(cfg.to_yaml(), title="[bold]Configuration[/bold]"))
+        active_lang = cfg.get("language")
+        if active_lang == "auto":
+            console.print("[dim]Language: auto (detected from input)[/dim]")
+        else:
+            console.print(f"[dim]Language: {active_lang}[/dim]")
     elif set_region:
         cfg.set("region", set_region)
         cfg.save()
