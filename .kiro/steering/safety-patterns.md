@@ -107,6 +107,8 @@ Only pure `aws ...` commands are allowed.
 
 > **Excepción:** El argumento literal `-` (stdin/stdout) es válido en algunos comandos AWS (ej: `aws s3 cp - s3://bucket/file`). No rechazar `-` como carácter aislado en posición de argumento, solo rechazar los operadores shell `<` y `>` como sintaxis de redirección.
 
+> **Excepción (quoted strings):** Metacharacters que aparecen DENTRO de cadenas entrecomilladas (single quotes `'...'` o double quotes `"..."`) son PERMITIDOS, ya que son valores de argumento y no operadores shell. Solo se rechazan metacharacters que aparecen como operadores a nivel del shell (fuera de strings entrecomillados).
+
 ## Audit Before Execute
 
 The audit logger MUST write the entry BEFORE the command executes. This ensures we have a record even if the command crashes the process.
@@ -131,3 +133,5 @@ The Bedrock translator may return a risk_level that's too low. The safety layer 
 - Check for destructive patterns regardless of LLM's risk assessment
 - Upgrade risk if patterns detected
 - Never downgrade risk below what the LLM suggested
+
+**Exception:** Read-only commands (describe, list, get, head, wait, show, ls) are ALWAYS forced to `low` risk if their action verb is read-only AND no destructive patterns are present in the command arguments. This prevents false-positive confirmations for safe operations. If destructive patterns ARE found in the arguments of a read-only command, normal risk classification applies.
