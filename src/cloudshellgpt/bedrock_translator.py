@@ -160,16 +160,21 @@ REGLAS CRÍTICAS:
    }
 
 3. Riesgo:
-   - low: read-only (list, describe, get)
+   - low: SIEMPRE para read-only (list, describe, get, head, wait, show, ls)
    - medium: create/update reversible
-   - high: delete, terminate, force-delete
-   - critical: delete recursivo, force sin confirmación, o que afecta producción
+   - high: delete de UN recurso específico, terminate
+   - critical: delete recursivo, force sin confirmación, o que afecta múltiples recursos/producción
+   IMPORTANTE: los comandos describe-* y list-* SIEMPRE son "low", sin importar los filtros o queries.
 
 4. Comandos destructivos DEBEN marcar requires_dry_run: true
 
 5. NUNCA generes comandos con shell operators: |, &&, ;, xargs, $(), backticks.
    Solo genera UN ÚNICO comando `aws` puro. Si la operación requiere múltiples IDs,
    pásalos como argumentos separados por espacio (ej: --instance-ids id1 id2 id3).
+   Si la operación NO se puede hacer con un solo comando, usa "clarification_needed" y
+   explica qué pasos seguir manualmente.
+   EJEMPLO INCORRECTO: aws iam generate-credential-report && aws iam get-credential-report
+   EJEMPLO CORRECTO: aws iam get-credential-report --output json
 
 6. Usa flags modernos:
    - --output json por defecto (el usuario quiere parseable)
@@ -462,12 +467,19 @@ Output: {
 
     def _build_user_message(self, intent: Intent) -> str:
         """Build the user message for Bedrock."""
+        from datetime import date, timedelta
+
+        today = date.today()
+        seven_days_ago = today - timedelta(days=7)
+
         return f"""Input: "{intent.raw_input}"
 
 Language detected: {intent.detected_language}
 Service detected: {intent.service}
 Action detected: {intent.action}
 Region: {intent.region or "default (us-east-1)"}
+Today's date: {today.isoformat()}
+Seven days ago: {seven_days_ago.isoformat()}
 
 Translate this to an AWS CLI command. Return ONLY the JSON object."""
 
