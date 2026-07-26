@@ -167,13 +167,17 @@ REGLAS CRÍTICAS:
 
 4. Comandos destructivos DEBEN marcar requires_dry_run: true
 
-5. Usa flags modernos:
+5. NUNCA generes comandos con shell operators: |, &&, ;, xargs, $(), backticks.
+   Solo genera UN ÚNICO comando `aws` puro. Si la operación requiere múltiples IDs,
+   pásalos como argumentos separados por espacio (ej: --instance-ids id1 id2 id3).
+
+6. Usa flags modernos:
    - --output json por defecto (el usuario quiere parseable)
    - --no-paginate cuando el resultado es chico
    - --query para filtrar server-side
    - --filters en lugar de client-side
 
-6. Idioma: explanation y detailed_explanation en el MISMO idioma del input
+7. Idioma: explanation y detailed_explanation en el MISMO idioma del input
 
 EJEMPLOS:
 
