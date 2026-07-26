@@ -440,8 +440,9 @@ class Explainer:
         "Provide a clear, educational explanation. Use markdown."
     )
 
-    def __init__(self, region: str = REGION) -> None:
+    def __init__(self, region: str = REGION, *, model_id: str = MODEL_ID) -> None:
         self.console = Console()
+        self.model_id = model_id
         self.bedrock = boto3.client("bedrock-runtime", region_name=region)
 
     def explain_sync(self, command: str) -> str:
@@ -455,7 +456,7 @@ class Explainer:
         """
         try:
             response = self.bedrock.converse(
-                modelId=self.MODEL_ID,
+                modelId=self.model_id,
                 messages=[{"role": "user", "content": [{"text": command}]}],
                 system=[{"text": self.EXPLAIN_SYSTEM_PROMPT}],
                 inferenceConfig={"maxTokens": 1024, "temperature": 0.3},

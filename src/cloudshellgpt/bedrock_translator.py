@@ -218,11 +218,13 @@ Output: {
         self,
         region: str = REGION,
         *,
+        model_id: str = MODEL_ID,
         max_retries: int = MAX_RETRIES,
         base_delay: float = BASE_DELAY,
     ) -> None:
         self.client = boto3.client("bedrock-runtime", region_name=region)
         self.region = region
+        self.model_id = model_id
         self.max_retries = max_retries
         self.base_delay = base_delay
 
@@ -263,7 +265,7 @@ Output: {
         for attempt in range(self.max_retries + 1):
             try:
                 return self.client.converse(  # type: ignore[no-any-return]
-                    modelId=self.MODEL_ID,
+                    modelId=self.model_id,
                     messages=[
                         {
                             "role": "user",
@@ -429,7 +431,7 @@ Output: {
             "ResourceNotFoundException": (
                 BedrockErrorType.MODEL_NOT_AVAILABLE,
                 "Model not found — it may not be available in your region",
-                (f"Verify that model '{self.MODEL_ID}' is enabled in region '{self.region}'"),
+                (f"Verify that model '{self.model_id}' is enabled in region '{self.region}'"),
             ),
             "ValidationException": (
                 BedrockErrorType.INVALID_RESPONSE,
