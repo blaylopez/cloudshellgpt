@@ -107,120 +107,122 @@ def ask(
         safety = SafetyLayer(region=effective_region, max_cost_alert=cfg.max_cost_alert)
         check = safety.assess(translation, cost_estimate=cost_estimate)
 
-        if cost_only:
-            if cost_estimate.status == "unknown":
-                console.print(
-                    Panel(
-                        "[bold yellow]Cost estimation unavailable[/bold yellow]\n"
-                        "[dim]Cost Explorer API could not be reached.[/dim]",
-                        title="[bold]Cost Preview[/bold]",
-                        border_style="yellow",
-                    )
-                )
-            else:
-                console.print(
-                    Panel(
-                        f"Estimated cost: {check.estimated_cost}",
-                        title="[bold]Cost Preview[/bold]",
-                    )
-                )
-            return
+    # --- From here on, no spinner (allows interactive input) ---
 
-        # 5. Show warning if cost estimation is unavailable
+    if cost_only:
         if cost_estimate.status == "unknown":
             console.print(
-                Text.from_markup(
-                    "[bold yellow]\u26a0\ufe0f  Cost estimation unavailable "
-                    "\u2014 proceed with caution[/bold yellow]"
+                Panel(
+                    "[bold yellow]Cost estimation unavailable[/bold yellow]\n"
+                    "[dim]Cost Explorer API could not be reached.[/dim]",
+                    title="[bold]Cost Preview[/bold]",
+                    border_style="yellow",
                 )
             )
-
-        # 6. Show what we're about to do
-        console.print(
-            Panel(
-                f"[bold]Command:[/bold]\n[cyan]{translation.command}[/cyan]\n\n"
-                f"[bold]Explanation:[/bold]\n{translation.explanation}\n\n"
-                f"[bold]Risk:[/bold] [{_risk_color(check.risk_level)}]{check.risk_level}[/{_risk_color(check.risk_level)}]\n"
-                f"[bold]Cost:[/bold] {check.estimated_cost}",
-                title="[bold]Plan[/bold]",
-                border_style="blue",
-            )
-        )
-
-        # 6b. Flag explanations (learning mode)
-        if cfg.enable_learning_mode:
-            _show_flag_explanations(translation.command)
-
-        # 7. Confirmation flow (varies by risk level)
-        _handle_confirmation(check, safety, translation, yes)
-
-        # 8. Audit BEFORE execution (safety: record intent even if process crashes)
-        audit = AuditLogger()
-        entry_id = audit.log_before(
-            intent=intent,
-            command=translation.command,
-            risk=check.risk_level,
-            dry_run=dry_run,
-        )
-
-        # 9. Execute
-        executor = AWSExecutor(dry_run=dry_run or check.requires_dry_run, timeout=cfg.timeout)
-        result = executor.run(translation.command)
-
-        # 10. Audit AFTER execution (record outcome)
-        audit.log_after(entry_id, result)
-
-        # 11. Format output
-        format_type: FormatType = cast(
-            FormatType,
-            output if output in ("table", "json", "yaml", "csv", "raw") else "table",
-        )
-        formatter = Formatter(format_type=format_type)
-        formatter.render(result)
-
-        # 12. Post-execution educational tip
-        if result.exit_code == 0 and cfg.enable_learning_mode:
-            from cloudshellgpt.learning import PostExecutionTips
-
-            tips = PostExecutionTips()
-            tip = tips.get_tip(translation.command)
-            if tip:
-                console.print(
-                    Panel(
-                        f"[dim]{tip}[/dim]",
-                        title="[bold green]💡 Tip[/bold green]",
-                        border_style="green",
-                        padding=(0, 1),
-                    )
-                )
-
-        # 13. Related command suggestions (learning mode)
-        if result.exit_code == 0 and cfg.enable_learning_mode:
-            from cloudshellgpt.learning import RelatedCommands
-
-            related = RelatedCommands()
-            suggestions = related.suggest(translation.command)
-            if suggestions:
-                lines: list[str] = []
-                for suggestion in suggestions:
-                    lines.append(f"  [cyan]{suggestion.command}[/cyan]  {suggestion.description}")
-                console.print(
-                    Panel(
-                        "\n".join(lines),
-                        title="[bold magenta]🔗 Related commands[/bold magenta]",
-                        border_style="magenta",
-                        padding=(0, 1),
-                    )
-                )
-
-        if explain:
+        else:
             console.print(
                 Panel(
-                    translation.detailed_explanation,
-                    title="[bold]Learn: What just happened?[/bold]",
-                    border_style="green",
+                    f"Estimated cost: {check.estimated_cost}",
+                    title="[bold]Cost Preview[/bold]",
                 )
             )
+        return
+
+    # 5. Show warning if cost estimation is unavailable
+    if cost_estimate.status == "unknown":
+        console.print(
+            Text.from_markup(
+                "[bold yellow]\u26a0\ufe0f  Cost estimation unavailable "
+                "\u2014 proceed with caution[/bold yellow]"
+            )
+        )
+
+    # 6. Show what we're about to do
+    console.print(
+        Panel(
+            f"[bold]Command:[/bold]\n[cyan]{translation.command}[/cyan]\n\n"
+            f"[bold]Explanation:[/bold]\n{translation.explanation}\n\n"
+            f"[bold]Risk:[/bold] [{_risk_color(check.risk_level)}]{check.risk_level}[/{_risk_color(check.risk_level)}]\n"
+            f"[bold]Cost:[/bold] {check.estimated_cost}",
+            title="[bold]Plan[/bold]",
+            border_style="blue",
+        )
+    )
+
+    # 6b. Flag explanations (learning mode)
+    if cfg.enable_learning_mode:
+        _show_flag_explanations(translation.command)
+
+    # 7. Confirmation flow (varies by risk level)
+    _handle_confirmation(check, safety, translation, yes)
+
+    # 8. Audit BEFORE execution (safety: record intent even if process crashes)
+    audit = AuditLogger()
+    entry_id = audit.log_before(
+        intent=intent,
+        command=translation.command,
+        risk=check.risk_level,
+        dry_run=dry_run,
+    )
+
+    # 9. Execute
+    executor = AWSExecutor(dry_run=dry_run or check.requires_dry_run, timeout=cfg.timeout)
+    result = executor.run(translation.command)
+
+    # 10. Audit AFTER execution (record outcome)
+    audit.log_after(entry_id, result)
+
+    # 11. Format output
+    format_type: FormatType = cast(
+        FormatType,
+        output if output in ("table", "json", "yaml", "csv", "raw") else "table",
+    )
+    formatter = Formatter(format_type=format_type)
+    formatter.render(result)
+
+    # 12. Post-execution educational tip
+    if result.exit_code == 0 and cfg.enable_learning_mode:
+        from cloudshellgpt.learning import PostExecutionTips
+
+        tips = PostExecutionTips()
+        tip = tips.get_tip(translation.command)
+        if tip:
+            console.print(
+                Panel(
+                    f"[dim]{tip}[/dim]",
+                    title="[bold green]💡 Tip[/bold green]",
+                    border_style="green",
+                    padding=(0, 1),
+                )
+            )
+
+    # 13. Related command suggestions (learning mode)
+    if result.exit_code == 0 and cfg.enable_learning_mode:
+        from cloudshellgpt.learning import RelatedCommands
+
+        related = RelatedCommands()
+        suggestions = related.suggest(translation.command)
+        if suggestions:
+            lines: list[str] = []
+            for suggestion in suggestions:
+                lines.append(f"  [cyan]{suggestion.command}[/cyan]  {suggestion.description}")
+            console.print(
+                Panel(
+                    "\n".join(lines),
+                    title="[bold magenta]🔗 Related commands[/bold magenta]",
+                    border_style="magenta",
+                    padding=(0, 1),
+                )
+            )
+
+    if explain:
+        console.print(
+            Panel(
+                translation.detailed_explanation,
+                title="[bold]Learn: What just happened?[/bold]",
+                border_style="green",
+            )
+        )
 
 
 @app.command()
