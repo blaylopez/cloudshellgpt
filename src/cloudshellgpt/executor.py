@@ -174,8 +174,14 @@ class AWSExecutor:
         # Check for shell metacharacters in the raw command string.
         # We scan the raw string to catch injection attempts that might
         # survive shlex splitting.
+        # First, remove content inside quotes (single and double) since
+        # those are argument values, not shell operators. JMESPath uses |
+        # inside --query '...' which is valid and not a shell pipe.
+        unquoted = re.sub(r"'[^']*'", "", command)
+        unquoted = re.sub(r'"[^"]*"', "", unquoted)
+
         for pattern, description in SHELL_METACHAR_PATTERNS:
-            if re.search(pattern, command):
+            if re.search(pattern, unquoted):
                 # Exception: the standalone '-' argument is valid for
                 # stdin/stdout usage (e.g., aws s3 cp - s3://bucket/file).
                 # Only skip '<'/'>' detection when the character appears
