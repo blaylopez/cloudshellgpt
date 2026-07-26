@@ -111,7 +111,7 @@ class BedrockTranslator:
     Retries transient errors (throttling, timeouts) with exponential backoff.
     """
 
-    MODEL_ID = "anthropic.claude-sonnet-4-20250514-v1:0"
+    MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
     REGION = "us-east-1"
 
     # --- Retry configuration constants ---
