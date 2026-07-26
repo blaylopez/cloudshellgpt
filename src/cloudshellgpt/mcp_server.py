@@ -170,33 +170,69 @@ async def _tool_execute(args: dict[str, Any]) -> list[TextContent]:
 
 
 async def _tool_cost_preview(args: dict[str, Any]) -> list[TextContent]:
-    """Handle aws_cost_preview tool call."""
-    # Parse command to identify service and operation
+    """Handle aws_cost_preview tool call.
+
+    Estimates the cost and risk level of an AWS CLI command before execution.
+    Uses CostEstimator for cost data and SafetyLayer for independent risk
+    classification. Each call instantiates fresh dependencies (stateless).
+
+    Args:
+        args: Dictionary with 'command' key containing the AWS CLI command.
+
+    Returns:
+        JSON with command, estimated_cost, risk_level, and warnings.
+    """
+    from cloudshellgpt.bedrock_translator import Translation
+    from cloudshellgpt.cost import CostEstimator
+
     command = args.get("command", "")
 
-    # Use the safety layer's cost estimation
-    # (simplified — full impl would parse command more thoroughly)
-    from cloudshellgpt.bedrock_translator import Translation
+    # Instantiate fresh dependencies per call (stateless requirement)
+    cost_estimator = CostEstimator()
+    safety = SafetyLayer()
 
+    # Get cost estimate from Cost Explorer API
+    cost_estimate = cost_estimator.estimate(command)
+
+    # Build a minimal Translation for the safety layer's risk assessment.
+    # The safety layer classifies risk independently via pattern matching,
+    # so we set risk_level="low" to let the rule-based system do its job
+    # without artificial inflation from the translation side.
     mock_translation = Translation(
         command=command,
         explanation="Cost preview",
         detailed_explanation="",
         risk_level="low",
-        estimated_cost="TBD",
+        estimated_cost=cost_estimate.estimated_monthly_cost > 0
+        and f"${cost_estimate.estimated_monthly_cost:.2f}/month"
+        or "$0.00",
     )
 
-    safety = SafetyLayer()
-    check = safety.assess(mock_translation)
+    # Assess risk with cost estimate integrated
+    safety_check = safety.assess(mock_translation, cost_estimate=cost_estimate)
+
+    # Format estimated_cost string
+    if cost_estimate.status == "estimated" and cost_estimate.estimated_monthly_cost > 0:
+        estimated_cost = f"${cost_estimate.estimated_monthly_cost:.2f}/month"
+    elif cost_estimate.status == "unknown":
+        estimated_cost = "unknown"
+    else:
+        estimated_cost = "$0.00"
+
+    # Combine warnings from both cost estimation and safety assessment
+    warnings: list[str] = []
+    warnings.extend(cost_estimate.warnings)
+    if safety_check.warnings:
+        warnings.extend(w for w in safety_check.warnings if w not in cost_estimate.warnings)
 
     result = {
         "command": command,
-        "estimated_cost": check.estimated_cost,
-        "risk_level": check.risk_level,
-        "warnings": check.warnings,
+        "estimated_cost": estimated_cost,
+        "risk_level": safety_check.risk_level,
+        "warnings": warnings,
     }
 
-    return [TextContent(type="text", text=json.dumps(result, indent=2))]
+    return [TextContent(type="text", text=json.dumps(result, indent=2, ensure_ascii=False))]
 
 
 async def _tool_explain(args: dict[str, Any]) -> list[TextContent]:

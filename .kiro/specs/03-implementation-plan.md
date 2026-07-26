@@ -63,18 +63,18 @@
 - [x] Integración safety ↔ cost: safety consume CostEstimate para alertar según max_cost_alert
 - [x] Fallback si Cost Explorer falla: status="unknown", warning al usuario
 - [x] Dry-run injection para servicios soportados (ec2, rds, s3api, iam, cloudformation, lambda)
-- [ ] Confirmation flow: low→execute, medium→Y/N, high→typed, critical→dry-run+"yes-i-understand"
-- [ ] Implementar AuditLogger en `src/cloudshellgpt/audit.py` (log ANTES de ejecutar)
-- [ ] Tests parametrizados para SafetyLayer — detección exhaustiva de TODOS los destructive patterns (parametrizar la lista completa: "delete", "terminate", "rm", "remove", "drop", "destroy", "force", "purge", "wipe", "nuke", "deregister", "revoke", "detach", "disable", "release", "empty", "--recursive", "--force", "-f", "--no-preserve", "--skip-final-snapshot", "--force-delete", "--permanently-delete", "--no-undo", "--force-destroy", "--delete-all-versions", "--bypass-governance-retention", "--no-preserve-root" = 28 casos mínimo)
-- [ ] Tests de invariante: safety NUNCA downgrda — generar 50+ combinaciones de (LLM_risk_level, command) y verificar que `assess()` retorna risk ≥ LLM_risk_level en TODOS los casos
-- [ ] Tests parametrizados para risk classification — mínimo 5 comandos por nivel (low: list/describe/get/head/wait, medium: create-bucket/tag-resource/put-metric-alarm/enable-*/create-snapshot, high: delete-bucket/terminate-instances/revoke-sg/detach-volume, critical: rm --recursive/--force-delete/--skip-final-snapshot)
-- [ ] Tests para heurística medium vs high — mínimo 10 casos: 5 operaciones con inverso directo (→ medium) + 5 que destruyen datos (→ high)
-- [ ] Tests para _upgrade_risk ladder — parametrizar todas las transiciones: low→high, medium→high, high→critical, critical→critical
-- [ ] Tests para combinaciones peligrosas en contexto (ej: `update-stack` sin changeset, `put-bucket-policy` con "*")
-- [ ] Tests unitarios para CostTracker — happy path: track + session_summary, fallback: Cost Explorer error retorna status="unknown", budget alert: costo > max_cost_alert trigger warning
-- [ ] Tests para CostTracker — session tracking acumulativo: múltiples track() y verificar que session_summary refleja todos
-- [ ] Tests para integración safety ↔ cost: safety consume CostEstimate y alerta según umbral configurado
-- [ ] **Checkpoint:** Comando destructivo requiere confirmación + muestra costo + 100% de destructive patterns detectados
+- [x] Confirmation flow: low→execute, medium→Y/N, high→typed, critical→dry-run+"yes-i-understand"
+- [x] Implementar AuditLogger en `src/cloudshellgpt/audit.py` (log ANTES de ejecutar)
+- [x] Tests parametrizados para SafetyLayer — detección exhaustiva de TODOS los destructive patterns (parametrizar la lista completa: "delete", "terminate", "rm", "remove", "drop", "destroy", "force", "purge", "wipe", "nuke", "deregister", "revoke", "detach", "disable", "release", "empty", "--recursive", "--force", "-f", "--no-preserve", "--skip-final-snapshot", "--force-delete", "--permanently-delete", "--no-undo", "--force-destroy", "--delete-all-versions", "--bypass-governance-retention", "--no-preserve-root" = 28 casos mínimo)
+- [x] Tests de invariante: safety NUNCA downgrda — generar 50+ combinaciones de (LLM_risk_level, command) y verificar que `assess()` retorna risk ≥ LLM_risk_level en TODOS los casos
+- [x] Tests parametrizados para risk classification — mínimo 5 comandos por nivel (low: list/describe/get/head/wait, medium: create-bucket/tag-resource/put-metric-alarm/enable-*/create-snapshot, high: delete-bucket/terminate-instances/revoke-sg/detach-volume, critical: rm --recursive/--force-delete/--skip-final-snapshot)
+- [x] Tests para heurística medium vs high — mínimo 10 casos: 5 operaciones con inverso directo (→ medium) + 5 que destruyen datos (→ high)
+- [x] Tests para _upgrade_risk ladder — parametrizar todas las transiciones: low→high, medium→high, high→critical, critical→critical
+- [x] Tests para combinaciones peligrosas en contexto (ej: `update-stack` sin changeset, `put-bucket-policy` con "*")
+- [x] Tests unitarios para CostTracker — happy path: track + session_summary, fallback: Cost Explorer error retorna status="unknown", budget alert: costo > max_cost_alert trigger warning
+- [x] Tests para CostTracker — session tracking acumulativo: múltiples track() y verificar que session_summary refleja todos
+- [x] Tests para integración safety ↔ cost: safety consume CostEstimate y alerta según umbral configurado
+- [x] **Checkpoint:** Comando destructivo requiere confirmación + muestra costo + 100% de destructive patterns detectados
 
 ---
 
@@ -83,31 +83,31 @@
 **Goal:** Ejecución segura + output beautiful
 
 #### Tareas
-- [ ] Implementar `ExecutionResult` model en `src/cloudshellgpt/executor.py`
-- [ ] AWSExecutor con validación estricta: solo `aws`, sin shell metacharacters
-- [ ] Shell injection prevention completa (|, &&, ||, ;, backticks, $(), >, >>, <, &, \n, \0, <<, <(…), >(…), $VAR, ${VAR})
-- [ ] Excepción: argumento literal `-` es válido
-- [ ] Timeout configurable (30s default)
-- [ ] Retry exponencial para throttling/timeouts
-- [ ] Orden correcto: audit.log() → executor.run()
-- [ ] Implementar Formatter en `src/cloudshellgpt/formatter.py`
-- [ ] Rich integration: tablas, panels, colors, progress
-- [ ] Multi-format output: table (default), json, yaml, csv
-- [ ] Auto-detección TTY vs pipe (no-TTY → JSON sin colores)
-- [ ] Error messages humanizados en español
-- [ ] Tests parametrizados para AWSExecutor — rechazo exhaustivo de TODOS los shell metacharacters (parametrizar cada uno individualmente: `|`, `&&`, `||`, `;`, `` ` ` ``, `$(...)`, `>`, `>>`, `<`, `2>`, `&` al final, `\n`, `\0`, `<<`, `<<<`, `<(...)`, `>(...)`, `$VAR`, `${VAR}` = 19 casos mínimo, cada uno en un comando que se vea legítimo ej: `aws s3 ls | grep prod`)
-- [ ] Tests de invariante: executor SOLO ejecuta comandos que empiezan con `aws` — parametrizar mínimo 10 comandos no-aws: `curl`, `rm -rf /`, `ls`, `python`, `bash`, `sh -c`, `echo`, `cat`, comando vacío `""`, solo espacios `"   "`, `aws` como substring (`notaws s3 ls`)
-- [ ] Tests para excepción del argumento `-` (AC-2.2) — verificar que `aws s3 cp - s3://bucket/file` es aceptado, pero `aws s3 ls > output.txt` es rechazado
-- [ ] Tests parametrizados para metacharacters en posiciones variadas: al inicio (`| aws s3 ls`), al medio (`aws s3 ls | grep`), al final (`aws s3 ls &`), dentro de argumentos (`aws s3 cp s3://$(whoami)/file .`), entre comillas simples vs dobles
-- [ ] Tests para timeout — subprocess que excede 30s retorna exit_code=124 con error claro
-- [ ] Tests para dry-run injection — parametrizar todos los servicios soportados (ec2 run-instances, ec2 terminate-instances, ec2 delete-volume, rds delete-db-instance, s3api delete-bucket, iam delete-user) y verificar que se agrega `--dry-run`. Verificar que servicios NO soportados NO reciben `--dry-run`
-- [ ] Tests para retry exponencial — simular 3 errores transitorios seguidos y verificar que reintenta con backoff
-- [ ] Tests para AWS CLI not found (FileNotFoundError) — retorna exit_code=127 con mensaje claro
-- [ ] Tests unitarios para Formatter — parametrizar los 5 formatos (table, json, yaml, csv, raw) con mismo input y verificar output válido en cada formato
-- [ ] Tests para Formatter — auto-detección TTY vs pipe: mockear `sys.stdout.isatty()` como True/False y verificar cambio de comportamiento
-- [ ] Tests para Formatter — edge cases: output vacío, JSON inválido como stdout, lista vacía, lista con > 50 items (verifica truncamiento), caracteres unicode en datos
-- [ ] Tests para Formatter — error rendering: exit_code != 0 muestra mensaje humanizado con stderr
-- [ ] **Checkpoint:** `csgpt "lista buckets"` muestra tabla bonita + 100% metacharacters rechazados + tests pasan
+- [x] Implementar `ExecutionResult` model en `src/cloudshellgpt/executor.py`
+- [x] AWSExecutor con validación estricta: solo `aws`, sin shell metacharacters
+- [x] Shell injection prevention completa (|, &&, ||, ;, backticks, $(), >, >>, <, &, \n, \0, <<, <(…), >(…), $VAR, ${VAR})
+- [x] Excepción: argumento literal `-` es válido
+- [x] Timeout configurable (30s default)
+- [x] Retry exponencial para throttling/timeouts
+- [x] Orden correcto: audit.log() → executor.run()
+- [x] Implementar Formatter en `src/cloudshellgpt/formatter.py`
+- [x] Rich integration: tablas, panels, colors, progress
+- [x] Multi-format output: table (default), json, yaml, csv
+- [x] Auto-detección TTY vs pipe (no-TTY → JSON sin colores)
+- [x] Error messages humanizados en español
+- [x] Tests parametrizados para AWSExecutor — rechazo exhaustivo de TODOS los shell metacharacters (parametrizar cada uno individualmente: `|`, `&&`, `||`, `;`, `` ` ` ``, `$(...)`, `>`, `>>`, `<`, `2>`, `&` al final, `\n`, `\0`, `<<`, `<<<`, `<(...)`, `>(...)`, `$VAR`, `${VAR}` = 19 casos mínimo, cada uno en un comando que se vea legítimo ej: `aws s3 ls | grep prod`)
+- [x] Tests de invariante: executor SOLO ejecuta comandos que empiezan con `aws` — parametrizar mínimo 10 comandos no-aws: `curl`, `rm -rf /`, `ls`, `python`, `bash`, `sh -c`, `echo`, `cat`, comando vacío `""`, solo espacios `"   "`, `aws` como substring (`notaws s3 ls`)
+- [x] Tests para excepción del argumento `-` (AC-2.2) — verificar que `aws s3 cp - s3://bucket/file` es aceptado, pero `aws s3 ls > output.txt` es rechazado
+- [x] Tests parametrizados para metacharacters en posiciones variadas: al inicio (`| aws s3 ls`), al medio (`aws s3 ls | grep`), al final (`aws s3 ls &`), dentro de argumentos (`aws s3 cp s3://$(whoami)/file .`), entre comillas simples vs dobles
+- [x] Tests para timeout — subprocess que excede 30s retorna exit_code=124 con error claro
+- [x] Tests para dry-run injection — parametrizar todos los servicios soportados (ec2 run-instances, ec2 terminate-instances, ec2 delete-volume, rds delete-db-instance, s3api delete-bucket, iam delete-user) y verificar que se agrega `--dry-run`. Verificar que servicios NO soportados NO reciben `--dry-run`
+- [x] Tests para retry exponencial — simular 3 errores transitorios seguidos y verificar que reintenta con backoff
+- [x] Tests para AWS CLI not found (FileNotFoundError) — retorna exit_code=127 con mensaje claro
+- [x] Tests unitarios para Formatter — parametrizar los 5 formatos (table, json, yaml, csv, raw) con mismo input y verificar output válido en cada formato
+- [x] Tests para Formatter — auto-detección TTY vs pipe: mockear `sys.stdout.isatty()` como True/False y verificar cambio de comportamiento
+- [x] Tests para Formatter — edge cases: output vacío, JSON inválido como stdout, lista vacía, lista con > 50 items (verifica truncamiento), caracteres unicode en datos
+- [x] Tests para Formatter — error rendering: exit_code != 0 muestra mensaje humanizado con stderr
+- [x] **Checkpoint:** `csgpt "lista buckets"` muestra tabla bonita + 100% metacharacters rechazados + tests pasan
 
 ---
 
@@ -116,34 +116,34 @@
 **Goal:** MCP server funcional + modo educativo
 
 #### Tareas
-- [ ] Implementar MCP server en `src/cloudshellgpt/mcp_server.py`
-- [ ] Setup stdio transport
-- [ ] Tool definitions con name, description, inputSchema
-- [ ] Implementar handler `aws_translate`: input={intent, region?}, output={command, explanation, detailed_explanation, risk_level, estimated_cost, requires_dry_run, affected_resources, flags_used}
-- [ ] Implementar handler `aws_execute`: input={command, dry_run?}, output={command, exit_code, stdout, stderr, duration_ms, dry_run}
-- [ ] Implementar handler `aws_cost_preview`: input={command}, output={command, estimated_cost, risk_level, warnings}
-- [ ] Implementar handler `aws_explain`: input={command}, output=markdown explanation
-- [ ] Cada handler instancia propias dependencias (stateless)
-- [ ] Catch ALL exceptions → retorna error como TextContent
-- [ ] aws_execute description DEBE decir que confirme con usuario
-- [ ] Implementar LearningMode en `src/cloudshellgpt/learning.py`
-- [ ] Tips educativos post-ejecución
-- [ ] Explicación de flags del comando traducido
-- [ ] Sugerencias de comandos relacionados
-- [ ] `csgpt explain <command>` (Bedrock temperature=0.3, max_tokens=1024)
-- [ ] `csgpt learn <service>` — tutorial interactivo
-- [ ] Tests de invariante: MCP server NUNCA crashea — parametrizar mínimo 10 tipos de excepciones inyectadas en handlers (ValueError, TypeError, KeyError, AttributeError, BedrockError, TimeoutError, ConnectionError, json.JSONDecodeError, boto3 ClientError, RuntimeError) y verificar que SIEMPRE retorna list[TextContent] con mensaje de error, nunca propaga exception
-- [ ] Tests de invariante: MCP es stateless — hacer 5 calls secuenciales a `aws_translate` con inputs diferentes y verificar que cada call instancia nuevas dependencias (mock IntentParser/BedrockTranslator con side_effect que detecte reutilización)
-- [ ] Tests parametrizados para los 4 tools — verificar input/output contract de cada uno: aws_translate (input válido → JSON con 8 campos), aws_execute (input válido → JSON con 6 campos), aws_cost_preview (input → JSON con 4 campos), aws_explain (input → string markdown)
-- [ ] Tests para aws_translate — campos faltantes en input (sin intent, sin region), input vacío, input extremadamente largo (> 1000 chars)
-- [ ] Tests para aws_execute — verificar que description del tool contiene texto de confirmación con usuario (AC-6.3 requisito)
-- [ ] Tests para `list_tools()` — verificar que retorna exactamente 4 tools con names correctos, schemas JSON válidos, y descriptions no vacías
-- [ ] Tests para routing en `call_tool` — tool name desconocido retorna "Unknown tool", tool name vacío, tool name con caracteres especiales
-- [ ] Tests async para `serve_mcp()` — verificar que levanta sin error y responde a initialize (protocol compliance básico)
-- [ ] Tests unitarios para LearningMode — TutorialRunner con topic válido muestra steps, topic inválido muestra error con available topics
-- [ ] Tests para Explainer — mocked Bedrock: explain_sync retorna markdown, Bedrock error retorna mensaje de error sin crashear
-- [ ] Tests para Explainer.explain_last — audit log vacío muestra warning, audit con entries explica el último
-- [ ] **Checkpoint:** Kiro puede usar csgpt como MCP server + 100% de exceptions manejadas sin crash
+- [x] Implementar MCP server en `src/cloudshellgpt/mcp_server.py`
+- [x] Setup stdio transport
+- [x] Tool definitions con name, description, inputSchema
+- [x] Implementar handler `aws_translate`: input={intent, region?}, output={command, explanation, detailed_explanation, risk_level, estimated_cost, requires_dry_run, affected_resources, flags_used}
+- [x] Implementar handler `aws_execute`: input={command, dry_run?}, output={command, exit_code, stdout, stderr, duration_ms, dry_run}
+- [x] Implementar handler `aws_cost_preview`: input={command}, output={command, estimated_cost, risk_level, warnings}
+- [x] Implementar handler `aws_explain`: input={command}, output=markdown explanation
+- [x] Cada handler instancia propias dependencias (stateless)
+- [x] Catch ALL exceptions → retorna error como TextContent
+- [x] aws_execute description DEBE decir que confirme con usuario
+- [x] Implementar LearningMode en `src/cloudshellgpt/learning.py`
+- [x] Tips educativos post-ejecución
+- [x] Explicación de flags del comando traducido
+- [x] Sugerencias de comandos relacionados
+- [x] `csgpt explain <command>` (Bedrock temperature=0.3, max_tokens=1024)
+- [x] `csgpt learn <service>` — tutorial interactivo
+- [x] Tests de invariante: MCP server NUNCA crashea — parametrizar mínimo 10 tipos de excepciones inyectadas en handlers (ValueError, TypeError, KeyError, AttributeError, BedrockError, TimeoutError, ConnectionError, json.JSONDecodeError, boto3 ClientError, RuntimeError) y verificar que SIEMPRE retorna list[TextContent] con mensaje de error, nunca propaga exception
+- [x] Tests de invariante: MCP es stateless — hacer 5 calls secuenciales a `aws_translate` con inputs diferentes y verificar que cada call instancia nuevas dependencias (mock IntentParser/BedrockTranslator con side_effect que detecte reutilización)
+- [x] Tests parametrizados para los 4 tools — verificar input/output contract de cada uno: aws_translate (input válido → JSON con 8 campos), aws_execute (input válido → JSON con 6 campos), aws_cost_preview (input → JSON con 4 campos), aws_explain (input → string markdown)
+- [x] Tests para aws_translate — campos faltantes en input (sin intent, sin region), input vacío, input extremadamente largo (> 1000 chars)
+- [x] Tests para aws_execute — verificar que description del tool contiene texto de confirmación con usuario (AC-6.3 requisito)
+- [x] Tests para `list_tools()` — verificar que retorna exactamente 4 tools con names correctos, schemas JSON válidos, y descriptions no vacías
+- [x] Tests para routing en `call_tool` — tool name desconocido retorna "Unknown tool", tool name vacío, tool name con caracteres especiales
+- [x] Tests async para `serve_mcp()` — verificar que levanta sin error y responde a initialize (protocol compliance básico)
+- [x] Tests unitarios para LearningMode — TutorialRunner con topic válido muestra steps, topic inválido muestra error con available topics
+- [x] Tests para Explainer — mocked Bedrock: explain_sync retorna markdown, Bedrock error retorna mensaje de error sin crashear
+- [x] Tests para Explainer.explain_last — audit log vacío muestra warning, audit con entries explica el último
+- [x] **Checkpoint:** Kiro puede usar csgpt como MCP server + 100% de exceptions manejadas sin crash
 
 ---
 
@@ -152,24 +152,24 @@
 **Goal:** Documentación profesional + video + entrega
 
 #### Tareas
-- [ ] Completar eval set a 100+ casos (`tests/eval/translation_eval.yaml`) con distribución verificada:
+- [x] Completar eval set a 100+ casos (`tests/eval/translation_eval.yaml`) con distribución verificada:
   - ≥ 15 casos por idioma (ES, EN, PT, FR, DE, ZH) — total ≥ 90
   - ≥ 8 casos por servicio top (S3, EC2, Lambda, IAM, RDS, DynamoDB, VPC, SQS, SNS, CloudFront)
   - ≥ 25 low, ≥ 25 medium, ≥ 25 high, ≥ 15 critical
   - ≥ 10 edge cases (ambiguos, idioma mixto, vacíos, unicode, muy largos)
-- [ ] Crear script `tests/eval/validate_distribution.py` que verifica que el eval set cumple los mínimos de distribución antes de correr el eval
-- [ ] Implementar `tests/eval/test_eval.py` — runner que carga el YAML, ejecuta IntentParser sobre cada caso, y reporta precisión por dimensión (idioma, servicio, acción, riesgo)
-- [ ] Verificar > 90% precisión global en eval set Y > 85% por cada idioma individual (no solo el promedio)
-- [ ] Coverage global > 80%, safety > 90%, executor > 90% — generar reporte HTML con `pytest --cov-report=html`
-- [ ] Correr `ruff check . && mypy src/` sin errores — zero warnings policy
-- [ ] Tests de integración E2E (sandbox AWS): mínimo 3 flujos completos (list → show table, create → confirm → execute, delete → safety blocks)
-- [ ] README profesional con badges, quick start, examples
-- [ ] Documentación de IAM permissions
+- [x] Crear script `tests/eval/validate_distribution.py` que verifica que el eval set cumple los mínimos de distribución antes de correr el eval
+- [x] Implementar `tests/eval/test_eval.py` — runner que carga el YAML, ejecuta IntentParser sobre cada caso, y reporta precisión por dimensión (idioma, servicio, acción, riesgo)
+- [x] Verificar > 90% precisión global en eval set Y > 85% por cada idioma individual (no solo el promedio)
+- [x] Coverage global > 80%, safety > 90%, executor > 90% — generar reporte HTML con `pytest --cov-report=html`
+- [x] Correr `ruff check . && mypy src/` sin errores — zero warnings policy
+- [x] Tests de integración E2E (sandbox AWS): mínimo 3 flujos completos (list → show table, create → confirm → execute, delete → safety blocks)
+- [x] README profesional con badges, quick start, examples
+- [x] Documentación de IAM permissions
 - [ ] Grabar video demo 5-7 minutos
-- [ ] Demo script con casos impactantes (multi-idioma, safety prevention, cost alert)
+- [x] Demo script con casos impactantes (multi-idioma, safety prevention, cost alert)
 - [ ] GitHub release v1.0.0
 - [ ] Submit al hackathon
-- [ ] **Final Checkpoint:** Eval set pasa con > 90% global + > 85%/idioma + coverage cumplido + CI verde
+- [x] **Final Checkpoint:** Eval set pasa con > 90% global + > 85%/idioma + coverage cumplido + CI verde
 
 ---
 
