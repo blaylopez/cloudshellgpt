@@ -1,0 +1,13 @@
+{
+  "name": "Test Mirror Reminder",
+  "version": "1.0.0",
+  "description": "Reminds to update tests when source files change",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/cloudshellgpt/*.py"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source file was modified. Check if the corresponding test file in tests/unit/ needs to be updated to match the changes."
+  }
+}

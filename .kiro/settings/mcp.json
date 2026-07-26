@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "cloudshellgpt": {
+      "command": "csgpt",
+      "args": ["mcp", "serve"],
+      "env": {
+        "AWS_REGION": "us-east-1"
+      },
+      "disabled": false,
+      "autoApprove": ["aws_translate", "aws_explain", "aws_cost_preview"]
+    }
+  }
+}

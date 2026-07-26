@@ -1,0 +1,13 @@
+{
+  "name": "Lint on Save",
+  "version": "1.0.0",
+  "description": "Runs ruff check on saved Python files",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["*.py"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "ruff check --fix {file}"
+  }
+}
