@@ -96,6 +96,8 @@ class Translation(BaseModel):
     requires_dry_run: bool = False
     affected_resources: list[str] = Field(default_factory=list)
     flags_used: dict[str, str] = Field(default_factory=dict)
+    tip: str | None = None
+    related_commands: list[dict[str, str]] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -178,11 +180,18 @@ REGLAS CRÍTICAS:
 
 6. Usa flags modernos:
    - --output json por defecto (el usuario quiere parseable)
+   - --output table cuando el usuario pide listar/mostrar (más legible)
    - --no-paginate cuando el resultado es chico
-   - --query para filtrar server-side
+   - --query para filtrar server-side (IMPORTANTE: los alias/keys en --query SIEMPRE en ASCII, nunca usar caracteres Unicode. Ej: {Name:Name,Created:CreationDate} NO {名称:Name})
    - --filters en lugar de client-side
 
-7. Idioma: explanation y detailed_explanation en el MISMO idioma del input
+7. Idioma: TODAS las cadenas de texto dirigidas al usuario (explanation, detailed_explanation,
+   estimated_cost, tip, related_commands descriptions) deben estar en el MISMO idioma del input.
+   Los comandos AWS y nombres de flags permanecen en inglés.
+
+8. Incluye siempre estos campos adicionales en tu respuesta JSON:
+   "tip": "Un consejo educativo breve relacionado al comando (en el idioma del input)",
+   "related_commands": [{"command": "aws ...", "description": "breve descripción en el idioma del input"}]
 
 EJEMPLOS:
 
@@ -397,6 +406,8 @@ Output: {
             requires_dry_run=data.get("requires_dry_run", False),
             affected_resources=data.get("affected_resources", []),
             flags_used=data.get("flags_used", {}),
+            tip=data.get("tip"),
+            related_commands=data.get("related_commands", []),
         )
 
     def _map_client_error(self, error_code: str, exc: ClientError) -> BedrockError:
@@ -480,6 +491,7 @@ Action detected: {intent.action}
 Region: {intent.region or "default (us-east-1)"}
 Today's date: {today.isoformat()}
 Seven days ago: {seven_days_ago.isoformat()}
+Response language: ALL user-facing text MUST be in "{intent.detected_language}"
 
 Translate this to an AWS CLI command. Return ONLY the JSON object."""
 
