@@ -98,7 +98,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]
-source = ["src/cloudshellgpt"]
+source = ["cloudshellgpt", "src/cloudshellgpt"]
 omit = ["*/tests/*", "*/__init__.py"]
 
 [tool.uv]

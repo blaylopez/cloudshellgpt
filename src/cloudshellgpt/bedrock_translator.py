@@ -448,7 +448,7 @@ Output: {
             "ThrottlingException": (
                 BedrockErrorType.THROTTLING,
                 "Request was throttled by Bedrock",
-                "Try again in a few seconds",
+                "Try again in a few seconds. If you hit the daily token limit, wait until tomorrow or request a quota increase in the AWS console (Service Quotas → Bedrock)",
             ),
             "ServiceQuotaExceededException": (
                 BedrockErrorType.THROTTLING,
