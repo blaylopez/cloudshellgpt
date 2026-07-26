@@ -229,7 +229,7 @@ class CostEstimator:
             )
 
         except Exception as exc:
-            logger.warning("Cost Explorer API failed: %s", exc)
+            logger.debug("Cost Explorer API failed: %s", exc)
             return CostEstimate(
                 status="unknown",
                 estimated_monthly_cost=0.0,
