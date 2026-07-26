@@ -729,9 +729,15 @@ class TestSafetyNeverDowngradesInvariant:
         translation = _make_translation(command, risk_level=llm_risk)
         result = safety_layer.assess(translation)
 
-        # Read-only commands are ALWAYS classified as low regardless of LLM suggestion.
-        # Use the same _is_read_only method that safety.py uses.
-        if safety_layer._is_read_only(command.lower()):
+        # Read-only commands (by action verb) without destructive patterns
+        # are ALWAYS classified as low regardless of LLM suggestion.
+        cmd_parts = command.strip().split()
+        action = cmd_parts[2] if len(cmd_parts) > 2 else ""
+        read_only_actions = ("describe", "list", "get", "head", "wait", "show", "ls")
+        is_action_read_only = any(action.lower().startswith(p) for p in read_only_actions)
+        has_destructive = safety_layer._is_destructive(command)
+
+        if is_action_read_only and not has_destructive:
             assert result.risk_level == "low", (
                 f"Read-only command should be 'low' but got '{result.risk_level}': {command}"
             )
