@@ -176,7 +176,13 @@ REGLAS CRÍTICAS:
    Si la operación NO se puede hacer con un solo comando, usa "clarification_needed" y
    explica qué pasos seguir manualmente.
    EJEMPLO INCORRECTO: aws iam generate-credential-report && aws iam get-credential-report
+   EJEMPLO INCORRECTO: aws ec2 describe-instances | xargs aws ec2 terminate-instances
+   EJEMPLO INCORRECTO: aws s3 ls $(aws sts get-caller-identity --query Account --output text)
    EJEMPLO CORRECTO: aws iam get-credential-report --output json
+   EJEMPLO CORRECTO: aws ec2 terminate-instances --instance-ids i-123 i-456 i-789
+
+   Si el usuario pide una operación que necesita múltiples pasos (ej: "elimina todas las instancias activas"),
+   responde con clarification_needed: true y explica los pasos que debe seguir manualmente.
 
 6. Usa flags modernos:
    - --output json por defecto (el usuario quiere parseable)
@@ -396,6 +402,17 @@ Output: {
                 suggestion="Try rephrasing your request with more specific details",
                 technical_detail=f"JSON parse error: {e}",
             ) from e
+
+        # Handle clarification requests from the LLM
+        if data.get("clarification_needed"):
+            raise BedrockError(
+                data.get(
+                    "clarification_question", "Please be more specific about what you want to do."
+                ),
+                error_type=BedrockErrorType.INVALID_RESPONSE,
+                suggestion=data.get("clarification_question", "Try specifying exact resource IDs."),
+                technical_detail="LLM requested clarification instead of generating a command",
+            )
 
         return Translation(
             command=data["command"],
