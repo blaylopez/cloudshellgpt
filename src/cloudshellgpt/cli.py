@@ -165,8 +165,9 @@ def ask(
         dry_run=dry_run,
     )
 
-    # 9. Execute
-    executor = AWSExecutor(dry_run=dry_run or check.requires_dry_run, timeout=cfg.timeout)
+    # 9. Execute (dry_run only if user explicitly passed --dry-run flag;
+    #    critical operations already did their dry-run in confirmation flow)
+    executor = AWSExecutor(dry_run=dry_run, timeout=cfg.timeout)
     result = executor.run(translation.command)
 
     # 10. Audit AFTER execution (record outcome)
