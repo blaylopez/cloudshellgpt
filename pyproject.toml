@@ -1,6 +1,6 @@
 [project]
 name = "cloudshellgpt"
-version = "1.0.0"
+version = "1.0.1"
 description = "AWS CLI that speaks your language. Natural language to AWS operations via Amazon Bedrock."
 authors = [
     { name = "CloudShellGPT Team", email = "team@cloudshellgpt.dev" }
