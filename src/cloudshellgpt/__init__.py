@@ -6,6 +6,6 @@ powered by Amazon Bedrock (Claude 3.5 Sonnet). Built for the HACKATHONKIRO.
 
 from __future__ import annotations
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "CloudShellGPT Team"
 __license__ = "Apache-2.0"
