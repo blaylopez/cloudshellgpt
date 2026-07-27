@@ -32,14 +32,14 @@ CloudShellGPT convierte tus intenciones en lenguaje natural (en **cualquier idio
 ### Instalación (30 segundos)
 
 ```bash
-# Con pip
-pip install cloudshellgpt
+# Desde GitHub (recomendado)
+pip install git+https://github.com/blaylopez/cloudshellgpt.git
 
 # O con uv (más rápido)
-uv tool install cloudshellgpt
+uv pip install git+https://github.com/blaylopez/cloudshellgpt.git
 
-# O con pipx (aislado)
-pipx install cloudshellgpt
+# Desde PyPI (próximamente)
+# pip install cloudshellgpt
 ```
 
 ### Configuración inicial (1 minuto)
@@ -79,36 +79,63 @@ $ csgpt ask "lista los buckets de S3 con su fecha de creación"
 
 ---
 
-## 🎬 Demo — 5 ejemplos que impresionan
+## 🎬 Demo — 7 ejemplos que impresionan
 
 ### 1. En español, sin saber AWS CLI
 ```bash
-$ csgpt ask "muéstrame las lambdas que fallaron ayer"
+$ csgpt ask "muéstrame las funciones lambda de mi cuenta"
 ```
 
-### 2. En portugués, con filtro de costo
+### 2. En portugués, detección automática de idioma
 ```bash
-$ csgpt ask "liste os buckets do S3 que ninguém usa há mais de 90 dias"
+$ csgpt ask "liste os buckets do S3 com data de criação"
 ```
 
-### 3. En inglés, comando complejo generado
+### 3. Crear un recurso (DynamoDB)
 ```bash
-$ csgpt ask "create a t3.micro ec2 with a security group allowing SSH from my IP, and tag it as 'hackathon-demo'"
+$ csgpt ask "crea una tabla en DynamoDB llamada hackathon-users con partition key user_id"
+# Output:
+# ╭──────────── Plan ─────────────╮
+# │ Comando: aws dynamodb create-table --table-name hackathon-users
+# │   --attribute-definitions AttributeName=user_id,AttributeType=S
+# │   --key-schema AttributeName=user_id,KeyType=HASH
+# │   --billing-mode PAY_PER_REQUEST
+# │
+# │ Riesgo: medium
+# │ Costo: $1.25 por millón de escrituras / $0.25 por millón de lecturas
+# ╰──────────────────────────────╯
+# Proceed? [Y/n]: y
+# ✓ Tabla creada: arn:aws:dynamodb:us-east-1:***:table/hackathon-users
 ```
 
-### 4. Con predicción de costo
+### 4. Eliminar un recurso (con confirmación de seguridad)
+```bash
+$ csgpt ask "elimina la tabla DynamoDB hackathon-users"
+# Output:
+# ╭──────────── Plan ─────────────╮
+# │ Comando: aws dynamodb delete-table --table-name hackathon-users
+# │ Riesgo: high
+# │ Recursos afectados: dynamodb:table/hackathon-users, todos los ítems, índices GSI/LSI
+# ╰──────────────────────────────╯
+# ⚠️  OPERACIÓN DE ALTO RIESGO
+# Escribe el nombre del recurso ("dynamodb:table/hackathon-users") para confirmar: _
+#
+# 💡 Consejo: Antes de eliminar, considera hacer un backup con
+#    'aws dynamodb create-backup' o exportar a S3.
+```
+
+### 5. Con predicción de costo
 ```bash
 $ csgpt ask "spin up a rds postgres db.t3.medium for 30 days" --cost-only
 # Output:
-# Estimated monthly cost: $58.32
-# Breakdown:
-#   - RDS db.t3.medium (Single-AZ): $54.62/month
-#   - Storage (100GB gp2):       $11.50/month
-#   - Backup retention:          $2.00/month
-# Total:                          $68.12/month
+# ╭──────────────── Cost Preview ────────────────╮
+# │ Estimated cost: ~$60–$75 per month           │
+# │ (db.t3.medium On-Demand ~$0.082/hr           │
+# │  + gp3 storage ~$0.115/GB-month)             │
+# ╰──────────────────────────────────────────────╯
 ```
 
-### 5. Modo aprendizaje
+### 6. Modo aprendizaje
 ```bash
 $ csgpt ask "lista las funciones lambda con su runtime" --explain
 # Output:
@@ -126,6 +153,29 @@ $ csgpt ask "lista las funciones lambda con su runtime" --explain
 # 🔗 Relacionados:
 #   aws lambda get-function --function-name NOMBRE
 #   aws lambda list-functions --query 'Functions[?Runtime==`nodejs18.x`]...'
+```
+
+### 7. Explicar un comando existente (sin ejecutar)
+```bash
+$ csgpt explain "aws s3 rm s3://my-bucket --recursive"
+# Output:
+# ╭─────────────── Explanation ───────────────╮
+# │ Service: Amazon S3 (high-level commands)
+# │ Operation: rm — permanently deletes objects
+# │
+# │ Flags:
+# │   s3://my-bucket     → Targets the entire bucket root
+# │   --recursive        → Traverse all keys under the prefix
+# │
+# │ ⚠️  Common Pitfalls:
+# │   - Does NOT delete the bucket itself
+# │   - Versioned buckets: only adds Delete Markers
+# │   - No confirmation prompt — executes immediately
+# │   - Use --dryrun first to preview deletions
+# │
+# │ 💡 Dry-run:
+# │   aws s3 rm s3://my-bucket --recursive --dryrun
+# ╰──────────────────────────────────────────╯
 ```
 
 ---
@@ -265,7 +315,7 @@ Para documentación completa de permisos IAM, ver [docs/IAM_PERMISSIONS.md](docs
 - ✅ **Risk classification**: cada comando es evaluado antes de ejecutar
 - ✅ **Confirmation typed**: comandos críticos requieren escribir "yes-i-understand"
 - ✅ **Dry-run obligatorio**: para comandos `critical` se fuerza `--dry-run`
-- ✅ **Timeout enforcement**: comandos colgados se matan a los 30s
+- ✅ **Timeout enforcement**: comandos colgados se matan según configuración (default 60s)
 
 ---
 
@@ -284,12 +334,12 @@ Para documentación completa de permisos IAM, ver [docs/IAM_PERMISSIONS.md](docs
 
 ## 🤝 Contribución
 
-¡Contribuciones bienvenidas! Ver [CONTRIBUTING.md](CONTRIBUTING.md).
+¡Contribuciones bienvenidas!
 
 ### Setup de desarrollo
 
 ```bash
-git clone https://github.com/cloudshellgpt/cloudshellgpt
+git clone https://github.com/blaylopez/cloudshellgpt
 cd cloudshellgpt
 uv sync --all-extras
 pre-commit install
@@ -325,5 +375,5 @@ Apache 2.0 — ver [LICENSE](LICENSE).
 <p align="center">
   <strong>Hecho con ⚡ para HACKATHONKIRO</strong>
   <br>
-  <em>Demo en vivo: <a href="https://cloudshellgpt.dev/demo">cloudshellgpt.dev/demo</a></em>
+  <em>Repositorio: <a href="https://github.com/blaylopez/cloudshellgpt">github.com/blaylopez/cloudshellgpt</a></em>
 </p>
