@@ -50,11 +50,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cloudshellgpt/cloudshellgpt"
-Documentation = "https://cloudshellgpt.dev/docs"
-Repository = "https://github.com/cloudshellgpt/cloudshellgpt"
-Issues = "https://github.com/cloudshellgpt/cloudshellgpt/issues"
-Changelog = "https://github.com/cloudshellgpt/cloudshellgpt/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/blaylopez/cloudshellgpt"
+Documentation = "https://github.com/blaylopez/cloudshellgpt#readme"
+Repository = "https://github.com/blaylopez/cloudshellgpt"
+Issues = "https://github.com/blaylopez/cloudshellgpt/issues"
+Changelog = "https://github.com/blaylopez/cloudshellgpt/blob/main/CHANGELOG.md"
 
 [project.scripts]
 csgpt = "cloudshellgpt.cli:app"
