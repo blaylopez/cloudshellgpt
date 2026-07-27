@@ -5,6 +5,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI](https://img.shields.io/pypi/v/cloudshellgpt.svg)](https://pypi.org/project/cloudshellgpt/)
 [![Powered by Bedrock](https://img.shields.io/badge/Powered_by-Amazon_Bedrock-orange.svg)](https://aws.amazon.com/bedrock/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io)
 [![Kiro Compatible](https://img.shields.io/badge/Kiro-Ready-purple.svg)](https://kiro.dev)
@@ -32,14 +33,14 @@ CloudShellGPT convierte tus intenciones en lenguaje natural (en **cualquier idio
 ### Instalación (30 segundos)
 
 ```bash
-# Desde GitHub (recomendado)
-pip install git+https://github.com/blaylopez/cloudshellgpt.git
+# Con pip (desde PyPI)
+pip install cloudshellgpt
 
 # O con uv (más rápido)
-uv pip install git+https://github.com/blaylopez/cloudshellgpt.git
+uv pip install cloudshellgpt
 
-# Desde PyPI (próximamente)
-# pip install cloudshellgpt
+# O desde GitHub (última versión dev)
+pip install git+https://github.com/blaylopez/cloudshellgpt.git
 ```
 
 ### Configuración inicial (1 minuto)
@@ -375,5 +376,5 @@ Apache 2.0 — ver [LICENSE](LICENSE).
 <p align="center">
   <strong>Hecho con ⚡ para HACKATHONKIRO</strong>
   <br>
-  <em>Repositorio: <a href="https://github.com/blaylopez/cloudshellgpt">github.com/blaylopez/cloudshellgpt</a></em>
+  <em>PyPI: <a href="https://pypi.org/project/cloudshellgpt/">pypi.org/project/cloudshellgpt</a> · Repositorio: <a href="https://github.com/blaylopez/cloudshellgpt">github.com/blaylopez/cloudshellgpt</a></em>
 </p>
