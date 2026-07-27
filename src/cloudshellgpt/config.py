@@ -230,7 +230,7 @@ class ConfigManager:
         Raises:
             ConfigError: If the key is not a valid config field or validation fails.
         """
-        if key not in self._config.model_fields:
+        if key not in Config.model_fields:
             raise ConfigError(f"Unknown config key: '{key}'")
         try:
             data = self._config.model_dump()

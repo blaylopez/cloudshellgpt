@@ -405,7 +405,7 @@ class CostTracker:
         costs = self._load()
         costs.append(
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "command": command[:200],  # Truncate
                 "estimated_cost": estimated_cost,
             }
