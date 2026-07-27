@@ -110,19 +110,22 @@ $ csgpt ask "spin up a rds postgres db.t3.medium for 30 days" --cost-only
 
 ### 5. Modo aprendizaje
 ```bash
-$ csgpt ask "create a lambda that responds with current time" --explain
+$ csgpt ask "lista las funciones lambda con su runtime" --explain
 # Output:
-# ✓ Lambda created
+# ✓ Ejecutado
 #
 # What just happened? (educational mode)
-# - aws lambda create-function: Creates a new Lambda
-# - --function-name: must be unique within your account/region
-# - --runtime python3.12: latest stable Python runtime
-# - --role: IAM role with lambda:InvokeFunction permission
-# - --handler index.handler: file is index.py, function is handler()
-# - --zip-file fileb://: reads code from a ZIP file
+# - aws lambda list-functions: Obtiene todas las funciones Lambda de la cuenta
+# - --query: Filtra y selecciona campos relevantes (nombre, runtime, memoria, timeout)
+# - --output table: Presenta la información en formato tabular legible
+# - --no-paginate: Devuelve todos los resultados en una sola llamada
 #
-# 📚 Learn more: https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html
+# 💡 Consejo: Los runtimes deprecated dejan de recibir actualizaciones de seguridad.
+#    Filtra por runtime específico añadiendo '?Runtime==`python3.8`' al query.
+#
+# 🔗 Relacionados:
+#   aws lambda get-function --function-name NOMBRE
+#   aws lambda list-functions --query 'Functions[?Runtime==`nodejs18.x`]...'
 ```
 
 ---
