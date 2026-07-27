@@ -151,10 +151,13 @@ async def _tool_translate(args: dict[str, Any]) -> list[TextContent]:
 
 async def _tool_execute(args: dict[str, Any]) -> list[TextContent]:
     """Handle aws_execute tool call."""
+    from cloudshellgpt.config import Config
+
     command = args.get("command", "")
     dry_run = args.get("dry_run", False)
 
-    executor = AWSExecutor(dry_run=dry_run)
+    cfg = Config()
+    executor = AWSExecutor(dry_run=dry_run, timeout=cfg.timeout)
     result = executor.run(command)
 
     output = {

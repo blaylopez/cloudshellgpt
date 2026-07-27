@@ -296,6 +296,7 @@ class AWSExecutor:
                     text=True,
                     timeout=self.timeout,
                     check=False,
+                    stdin=subprocess.DEVNULL,
                 )
 
                 duration_ms = int((time.time() - start) * 1000)
